@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GameKingdom — endless games to kill the time</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎮</text></svg>">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="logo">🎮 <span>GameKingdom</span></div>
+    <p class="tagline">Endless games to kill the time</p>
+    <div class="search-wrap">
+      <input
+        id="search"
+        type="search"
+        placeholder="Search games…"
+        aria-label="Search games"
+        autocomplete="off"
+      >
+    </div>
+    <nav class="pills" id="pills" role="navigation" aria-label="Game categories">
+      <button class="pill active" data-category="all">All</button>
+      <button class="pill" data-category="puzzle">Puzzle</button>
+      <button class="pill" data-category="word">Word</button>
+      <button class="pill" data-category="action">Action</button>
+      <button class="pill" data-category="strategy">Strategy</button>
+      <button class="pill" data-category="arcade">Arcade</button>
+    </nav>
+  </header>
+
+  <main>
+    <div id="empty-state" class="empty-state hidden">
+      <span>🔍</span>
+      <p>No games found. Try a different search or category.</p>
+    </div>
+    <div id="game-grid" class="game-grid" role="list" aria-label="Game list"></div>
+  </main>
+
+  <footer class="site-footer">
+    <p>Built with ❤️ · <a href="https://github.com/xingliu14/GameKingdom" target="_blank" rel="noopener">GitHub</a></p>
+  </footer>
+
+  <script src="js/games.js"></script>
+</body>
+</html>
