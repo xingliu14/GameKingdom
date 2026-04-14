@@ -1,0 +1,240 @@
+/* ============================================================
+   GameKingdom — Mobile-first dark theme
+   ============================================================ */
+
+:root {
+  --bg:        #0f0f17;
+  --surface:   #1a1a2e;
+  --surface2:  #242440;
+  --border:    #2e2e50;
+  --accent:    #6c63ff;
+  --accent-h:  #8a84ff;
+  --text:      #e8e8f0;
+  --muted:     #8888aa;
+  --success:   #4ade80;
+  --danger:    #f87171;
+  --radius:    12px;
+  --card-min:  160px;
+}
+
+/* Light mode override */
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg:       #f0f0f8;
+    --surface:  #ffffff;
+    --surface2: #e8e8f4;
+    --border:   #d0d0e8;
+    --text:     #1a1a2e;
+    --muted:    #555580;
+  }
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Header ── */
+.site-header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 1.25rem 1rem 0.75rem;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  backdrop-filter: blur(8px);
+}
+
+.logo {
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.logo span { color: var(--accent); }
+
+.tagline {
+  color: var(--muted);
+  font-size: 0.8rem;
+  margin: 0.15rem 0 0.75rem;
+}
+
+/* ── Search ── */
+.search-wrap { margin-bottom: 0.75rem; }
+
+#search {
+  width: 100%;
+  padding: 0.6rem 1rem;
+  border-radius: 999px;
+  border: 1.5px solid var(--border);
+  background: var(--surface2);
+  color: var(--text);
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+#search:focus { border-color: var(--accent); }
+#search::placeholder { color: var(--muted); }
+
+/* ── Category pills ── */
+.pills {
+  display: flex;
+  gap: 0.4rem;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.pills::-webkit-scrollbar { display: none; }
+
+.pill {
+  flex-shrink: 0;
+  padding: 0.35rem 0.9rem;
+  border-radius: 999px;
+  border: 1.5px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  text-transform: capitalize;
+}
+.pill:hover { border-color: var(--accent); color: var(--text); }
+.pill.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+/* ── Main content ── */
+main {
+  flex: 1;
+  padding: 1.25rem 1rem 2rem;
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* ── Game Grid ── */
+.game-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--card-min), 1fr));
+  gap: 1rem;
+}
+
+/* ── Game Card ── */
+.game-card {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+  position: relative;
+  overflow: hidden;
+}
+.game-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--accent);
+  box-shadow: 0 8px 24px rgba(108,99,255,0.18);
+}
+.game-card.coming-soon { opacity: 0.65; cursor: default; }
+.game-card.coming-soon:hover { transform: none; box-shadow: none; border-color: var(--border); }
+
+.game-icon {
+  font-size: 2.4rem;
+  line-height: 1;
+}
+
+.game-name {
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.game-desc {
+  font-size: 0.78rem;
+  color: var(--muted);
+  line-height: 1.4;
+  flex: 1;
+}
+
+.game-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.25rem;
+}
+
+.game-category {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--accent);
+  background: rgba(108,99,255,0.12);
+  padding: 0.18rem 0.5rem;
+  border-radius: 999px;
+}
+
+.badge-soon {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  padding: 0.18rem 0.5rem;
+  border-radius: 999px;
+}
+
+/* ── Empty state ── */
+.empty-state {
+  text-align: center;
+  padding: 4rem 1rem;
+  color: var(--muted);
+}
+.empty-state span { font-size: 3rem; display: block; margin-bottom: 0.75rem; }
+.empty-state p { font-size: 0.95rem; }
+.hidden { display: none !important; }
+
+/* ── Footer ── */
+.site-footer {
+  text-align: center;
+  padding: 1rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+  border-top: 1px solid var(--border);
+}
+.site-footer a { color: var(--accent); text-decoration: none; }
+.site-footer a:hover { text-decoration: underline; }
+
+/* ── Responsive tweaks ── */
+@media (max-width: 400px) {
+  :root { --card-min: 140px; }
+  .logo { font-size: 1.25rem; }
+}
+@media (min-width: 600px) {
+  :root { --card-min: 180px; }
+  main { padding: 1.5rem 1.5rem 2.5rem; }
+}
+@media (min-width: 900px) {
+  :root { --card-min: 200px; }
+  .site-header { padding: 1.5rem 2rem 0.75rem; }
+  main { padding: 2rem 2rem 3rem; }
+}
