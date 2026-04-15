@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<!--
+  ╔══════════════════════════════════════════════════════════╗
+  ║  GameKingdom — Game Page Template                        ║
+  ║  Copy this file, rename it, build your game inside.      ║
+  ╚══════════════════════════════════════════════════════════╝
+
+  STEPS TO ADD A NEW GAME
+  ──────────────────────────────────────────────────────────
+  1. Copy this file to  games/<your-game-id>.html
+     e.g.  games/snake.html
+
+  2. Fill in all the TODO sections below.
+
+  3. Open  script.js  and add an entry to the GAMES array:
+
+       {
+         id:       'snake',
+         title:    'Snake',
+         desc:     'Eat the food, grow your snake, don\'t crash.',
+         category: 'casual',   // puzzle | action | casual | word | strategy | math
+         icon:     '🐍',
+         path:     'games/snake.html',
+         tags:     [],
+       },
+
+  4. Test it locally by opening index.html — your card should appear.
+
+  5. Commit & push.
+  ──────────────────────────────────────────────────────────
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- TODO: update title and description -->
+  <title>Game Name — GameKingdom</title>
+  <meta name="description" content="TODO: one-line description of the game." />
+  <style>
+    /* ---- shared base ---- */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0f0f13; --surface: #1a1a24; --border: #2e2e3e;
+      --accent: #7c5cfc; --text: #e8e8f0; --text-dim: #888899;
+    }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100dvh; display: flex; flex-direction: column;
+    }
+    a { color: var(--accent); }
+
+    /* ---- nav bar ---- */
+    .game-nav {
+      padding: 12px 16px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .back-link { font-size: .9rem; text-decoration: none; }
+    .back-link:hover { text-decoration: underline; }
+    .game-nav h1 { font-size: 1.1rem; font-weight: 700; }
+
+    /* ---- game container ---- */
+    #gameContainer {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+      gap: 16px;
+    }
+
+    /* ---- TODO: add your own game styles below ---- */
+  </style>
+</head>
+<body>
+
+  <nav class="game-nav">
+    <a href="../index.html" class="back-link">← GameKingdom</a>
+    <!-- TODO: update game name -->
+    <h1>Game Name</h1>
+  </nav>
+
+  <div id="gameContainer">
+    <!-- TODO: build your game UI here -->
+    <p style="color:var(--text-dim)">Your game lives here. Replace this placeholder with real game code.</p>
+  </div>
+
+  <script>
+    /**
+     * TODO: implement your game logic here (or link an external .js file).
+     *
+     * Tips:
+     *  - Keep everything self-contained in this file for portability.
+     *  - Use requestAnimationFrame for smooth animation loops.
+     *  - Emit a 'gameOver' CustomEvent on window when the game ends so future
+     *    analytics hooks can pick it up:
+     *
+     *      window.dispatchEvent(new CustomEvent('gameOver', {
+     *        detail: { game: 'your-game-id', score: finalScore }
+     *      }));
+     */
+  </script>
+
+</body>
+</html>
