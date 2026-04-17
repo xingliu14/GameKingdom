@@ -244,7 +244,11 @@
     const statusMsg     = document.getElementById('statusMsg');
 
     // ── Helpers ───────────────────────────────────────────────────────────────
-    function pad3(n) { return String(Math.max(0, Math.min(999, n))).padStart(3, '0'); }
+    function pad3(n) {
+      n = Math.max(-99, Math.min(999, n));
+      if (n < 0) return '-' + String(-n).padStart(2, '0');
+      return String(n).padStart(3, '0');
+    }
 
     function idx(r, c) { return r * config.cols + c; }
 
@@ -318,7 +322,8 @@
       if (cell.revealed) {
         el.classList.add('revealed');
         if (cell.mine) {
-          el.classList.add('mine-hit');
+          // mine-hit (red bg) is set manually only for the clicked mine;
+          // other revealed mines keep the plain 'revealed' background.
           el.classList.add('mine-revealed');
         } else if (cell.count > 0) {
           el.textContent = cell.count;
