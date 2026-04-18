@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Asteroid Dodge — GameKingdom</title>
+  <meta name="description" content="Steer your ship and survive the asteroid field as long as you can." />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0f0f13; --surface: #1a1a24; --border: #2e2e3e;
+      --accent: #7c5cfc; --text: #e8e8f0; --text-dim: #888899;
+    }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100dvh; display: flex; flex-direction: column;
+    }
+    a { color: var(--accent); }
+
+    .game-nav {
+      padding: 12px 16px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .back-link { font-size: .9rem; text-decoration: none; }
+    .back-link:hover { text-decoration: underline; }
+    .game-nav h1 { font-size: 1.1rem; font-weight: 700; }
+
+    #gameContainer {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      gap: 12px;
+    }
+
+    #scoreBar {
+      font-size: .9rem;
+      color: var(--text-dim);
+    }
+    #scoreBar span {
+      color: var(--text);
+      font-weight: 700;
+      font-size: 1rem;
+    }
+
+    #canvasWrap {
+      position: relative;
+      width: 100%;
+      max-width: 480px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      background: #0a0a10;
+    }
+    #gameCanvas {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      background: rgba(10, 10, 16, .88);
+      backdrop-filter: blur(3px);
+    }
+    .overlay h2 { font-size: 1.6rem; font-weight: 800; }
+    .overlay p {
+      color: var(--text-dim);
+      font-size: .9rem;
+      text-align: center;
+      max-width: 260px;
+      line-height: 1.5;
+    }
+    .score-display {
+      font-size: 2.6rem;
+      font-weight: 800;
+      color: var(--accent);
+    }
+    .sub { font-size: .8rem; color: var(--text-dim); }
+
+    .btn {
+      padding: 10px 28px;
+      border-radius: 8px;
+      border: none;
+      background: var(--accent);
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity .15s;
+    }
+    .btn:hover { opacity: .85; }
+    .btn:active { opacity: .7; }
+
+    #touchHint {
+      font-size: .78rem;
+      color: var(--text-dim);
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="game-nav">
+    <a href="../index.html" class="back-link">← GameKingdom</a>
+    <h1>Asteroid Dodge</h1>
+  </nav>
+
+  <div id="gameContainer">
+    <div id="scoreBar">Time survived: <span id="scoreDisplay">0</span>s</div>
+
+    <div id="canvasWrap">
+      <canvas id="gameCanvas" width="480" height="640"></canvas>
+
+      <div class="overlay" id="startScreen">
+        <h2>🚀 Asteroid Dodge</h2>
+        <p>Dodge the falling asteroids as long as you can. The field gets more dangerous over time!</p>
+        <p><strong>← → Arrow keys</strong> to move<br>or <strong>tap left / right</strong> of the canvas</p>
+        <button class="btn" id="startBtn">Start Game</button>
+      </div>
+
+      <div class="overlay" id="gameOverScreen" style="display:none">
+        <h2>💥 Game Over</h2>
+        <div class="score-display" id="finalScore">0</div>
+        <div class="sub">seconds survived</div>
+        <button class="btn" id="restartBtn">Play Again</button>
+      </div>
+    </div>
+
+    <div id="touchHint">Tap left or right side of the canvas to steer the ship</div>
+  </div>
+
+  <script>
+    // ── Canvas ───────────────────────────────────────────────────────────────
+    const canvas = document.getElementById('gameCanvas');
+    const ctx    = canvas.getContext('2d');
+    const W = canvas.width;   // 480
+    const H = canvas.height;  // 640
+
+    // ── DOM ──────────────────────────────────────────────────────────────────
+    const startScreen    = document.getElementById('startScreen');
+    const gameOverScreen = document.getElementById('gameOverScreen');
+    const startBtn       = document.getElementById('startBtn');
+    const restartBtn     = document.getElementById('restartBtn');
+    const scoreDisplay   = document.getElementById('scoreDisplay');
+    const finalScoreEl   = document.getElementById('finalScore');
+    const canvasWrap     = document.getElementById('canvasWrap');
+
+    // ── Config ───────────────────────────────────────────────────────────────
+    const SHIP_W         = 28;
+    const SHIP_H         = 36;
+    const SHIP_SPEED     = 5;
+    const BASE_AST_SPEED = 2.2;
+    const SPEED_RAMP     = 0.0006; // additional speed per frame
+
+    // ── Background stars (static) ─────────────────────────────────────────
+    const STARS = Array.from({ length: 70 }, () => ({
+      x: Math.random() * W,
+      y: Math.random() * H,
+      r: Math.random() * 1.5 + 0.3,
+      a: 0.2 + Math.random() * 0.8,
+    }));
+
+    // ── State ────────────────────────────────────────────────────────────────
+    let ship, asteroids, particles;
+    let score, frameCount, lastSec;
+    let running = false;
+    let keys = {};
+    let touchLeft = false, touchRight = false;
+    let rafId = null;
+
+    // ── Drawing helpers ───────────────────────────────────────────────────────
+    function drawStars() {
+      STARS.forEach(s => {
+        ctx.save();
+        ctx.globalAlpha = s.a;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+        ctx.restore();
+      });
+    }
+
+    function drawShip(x, y) {
+      ctx.save();
+      ctx.translate(x, y);
+
+      // Engine flame (animated)
+      const flameLen = 12 + Math.random() * 8;
+      ctx.beginPath();
+      ctx.ellipse(0, SHIP_H * 0.42, 7, flameLen, 0, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(124, 92, 252, 0.45)';
+      ctx.fill();
+
+      // Ship body
+      ctx.beginPath();
+      ctx.moveTo(0, -SHIP_H / 2);
+      ctx.lineTo(SHIP_W / 2, SHIP_H / 2);
+      ctx.lineTo(0, SHIP_H / 3);
+      ctx.lineTo(-SHIP_W / 2, SHIP_H / 2);
+      ctx.closePath();
+      ctx.fillStyle = '#c0b0ff';
+      ctx.fill();
+      ctx.strokeStyle = '#7c5cfc';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // Cockpit window
+      ctx.beginPath();
+      ctx.ellipse(0, -SHIP_H * 0.1, 5, 9, 0, 0, Math.PI * 2);
+      ctx.fillStyle = '#5ee7df';
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    function makeAsteroidPoints(r) {
+      const n = 7 + Math.floor(Math.random() * 5);
+      const pts = [];
+      for (let i = 0; i < n; i++) {
+        const a  = (i / n) * Math.PI * 2;
+        const rr = r * (0.65 + Math.random() * 0.55);
+        pts.push({ x: Math.cos(a) * rr, y: Math.sin(a) * rr });
+      }
+      return pts;
+    }
+
+    function spawnAsteroid() {
+      const r = 16 + Math.random() * 24;
+      return {
+        x:     r + Math.random() * (W - 2 * r),
+        y:     -r - 4,
+        r,
+        speed: BASE_AST_SPEED + frameCount * SPEED_RAMP,
+        angle: Math.random() * Math.PI * 2,
+        spin:  (Math.random() - 0.5) * 0.05,
+        pts:   makeAsteroidPoints(r),
+      };
+    }
+
+    function drawAsteroid(ast) {
+      ctx.save();
+      ctx.translate(ast.x, ast.y);
+      ctx.rotate(ast.angle);
+      ctx.beginPath();
+      ctx.moveTo(ast.pts[0].x, ast.pts[0].y);
+      for (let i = 1; i < ast.pts.length; i++) ctx.lineTo(ast.pts[i].x, ast.pts[i].y);
+      ctx.closePath();
+      ctx.fillStyle = '#383858';
+      ctx.fill();
+      ctx.strokeStyle = '#6a6a9a';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // ── Particles ─────────────────────────────────────────────────────────────
+    const PARTICLE_COLORS = ['#7c5cfc', '#ff6b6b', '#ffd166', '#5ee7df', '#ffffff', '#ff9f43'];
+
+    function spawnExplosion(x, y) {
+      for (let i = 0; i < 35; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 1.5 + Math.random() * 5;
+        particles.push({
+          x, y,
+          vx:    Math.cos(angle) * speed,
+          vy:    Math.sin(angle) * speed,
+          life:  1.0,
+          decay: 0.022 + Math.random() * 0.04,
+          r:     2 + Math.random() * 4,
+          color: PARTICLE_COLORS[Math.floor(Math.random() * PARTICLE_COLORS.length)],
+        });
+      }
+    }
+
+    function updateDrawParticles() {
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x    += p.vx;
+        p.y    += p.vy;
+        p.vy   += 0.15;
+        p.life -= p.decay;
+        if (p.life <= 0) { particles.splice(i, 1); continue; }
+        ctx.save();
+        ctx.globalAlpha = Math.max(0, p.life);
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = p.color;
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    // ── Collision: circle vs AABB ─────────────────────────────────────────────
+    function circleHitsRect(cx, cy, cr, rx, ry, rw, rh) {
+      const nx = Math.max(rx, Math.min(cx, rx + rw));
+      const ny = Math.max(ry, Math.min(cy, ry + rh));
+      const dx = cx - nx, dy = cy - ny;
+      return dx * dx + dy * dy < cr * cr;
+    }
+
+    // ── Init ──────────────────────────────────────────────────────────────────
+    function initState() {
+      ship       = { x: W / 2, y: H - 80 };
+      asteroids  = [];
+      particles  = [];
+      score      = 0;
+      frameCount = 0;
+      lastSec    = -1;
+      scoreDisplay.textContent = '0';
+    }
+
+    // ── Game loop ─────────────────────────────────────────────────────────────
+    function gameLoop() {
+      if (!running) return;
+      rafId = requestAnimationFrame(gameLoop);
+      frameCount++;
+
+      // Background
+      ctx.fillStyle = '#0a0a10';
+      ctx.fillRect(0, 0, W, H);
+      drawStars();
+
+      // Ship movement
+      if ((keys['ArrowLeft']  || keys['a'] || touchLeft)  && ship.x > SHIP_W / 2 + 2)      ship.x -= SHIP_SPEED;
+      if ((keys['ArrowRight'] || keys['d'] || touchRight) && ship.x < W - SHIP_W / 2 - 2)  ship.x += SHIP_SPEED;
+
+      // Spawn asteroids: interval shrinks with time, capped at 28 frames
+      const spawnEvery = Math.max(28, 90 - Math.floor(frameCount / 120));
+      if (frameCount % spawnEvery === 0) asteroids.push(spawnAsteroid());
+
+      // Update asteroids
+      const shipL = ship.x - SHIP_W / 2 + 5;
+      const shipT = ship.y - SHIP_H / 2 + 5;
+      const shipW = SHIP_W - 10;
+      const shipH = SHIP_H - 10;
+      let hit = false;
+
+      for (let i = asteroids.length - 1; i >= 0; i--) {
+        const ast = asteroids[i];
+        ast.y     += ast.speed + frameCount * SPEED_RAMP;
+        ast.angle += ast.spin;
+
+        if (ast.y - ast.r > H) { asteroids.splice(i, 1); continue; }
+
+        drawAsteroid(ast);
+
+        if (!hit && circleHitsRect(ast.x, ast.y, ast.r * 0.72, shipL, shipT, shipW, shipH)) {
+          hit = true;
+        }
+      }
+
+      drawShip(ship.x, ship.y);
+      updateDrawParticles();
+
+      // Score (seconds survived)
+      const secs = Math.floor(frameCount / 60);
+      if (secs !== lastSec) {
+        lastSec = secs;
+        score   = secs;
+        scoreDisplay.textContent = secs;
+      }
+
+      if (hit) {
+        spawnExplosion(ship.x, ship.y);
+        // Draw one last frame with particles but no ship, then end
+        running = false;
+        // Animate remaining particles before showing game over
+        animateExplosion();
+      }
+    }
+
+    function animateExplosion() {
+      if (particles.length === 0) { endGame(); return; }
+      requestAnimationFrame(() => {
+        ctx.fillStyle = '#0a0a10';
+        ctx.fillRect(0, 0, W, H);
+        drawStars();
+        asteroids.forEach(drawAsteroid);
+        updateDrawParticles();
+        animateExplosion();
+      });
+    }
+
+    function startGame() {
+      startScreen.style.display    = 'none';
+      gameOverScreen.style.display = 'none';
+      if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+      initState();
+      running = true;
+      gameLoop();
+    }
+
+    function endGame() {
+      running = false;
+      if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+      finalScoreEl.textContent         = score;
+      gameOverScreen.style.display = 'flex';
+
+      window.dispatchEvent(new CustomEvent('gameOver', {
+        detail: { game: 'asteroid-dodge', score }
+      }));
+    }
+
+    // ── Keyboard ──────────────────────────────────────────────────────────────
+    document.addEventListener('keydown', e => {
+      keys[e.key] = true;
+      if (!running && (e.key === ' ' || e.key === 'Enter')) startGame();
+    });
+    document.addEventListener('keyup', e => { keys[e.key] = false; });
+
+    // ── Touch ─────────────────────────────────────────────────────────────────
+    function setTouchDirs(touches) {
+      touchLeft = false; touchRight = false;
+      const rect = canvas.getBoundingClientRect();
+      const mid  = (rect.left + rect.right) / 2;
+      for (const t of touches) {
+        if (t.clientX < mid) touchLeft  = true;
+        else                  touchRight = true;
+      }
+    }
+
+    canvasWrap.addEventListener('touchstart', e => {
+      e.preventDefault();
+      if (!running) { startGame(); return; }
+      setTouchDirs(e.touches);
+    }, { passive: false });
+
+    canvasWrap.addEventListener('touchmove', e => {
+      e.preventDefault();
+      setTouchDirs(e.touches);
+    }, { passive: false });
+
+    canvasWrap.addEventListener('touchend', e => {
+      e.preventDefault();
+      setTouchDirs(e.touches);
+    }, { passive: false });
+
+    // ── Buttons ───────────────────────────────────────────────────────────────
+    startBtn.addEventListener('click', startGame);
+    restartBtn.addEventListener('click', startGame);
+
+    // ── Initial idle frame ────────────────────────────────────────────────────
+    ctx.fillStyle = '#0a0a10';
+    ctx.fillRect(0, 0, W, H);
+    drawStars();
+  </script>
+
+</body>
+</html>
