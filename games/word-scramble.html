@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Word Scramble — GameKingdom</title>
+  <meta name="description" content="Unscramble the jumbled letters to form the hidden word." />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0f0f13; --surface: #1a1a24; --border: #2e2e3e;
+      --accent: #7c5cfc; --text: #e8e8f0; --text-dim: #888899;
+      --success: #4ade80; --danger: #f87171; --warn: #fbbf24;
+    }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100dvh; display: flex; flex-direction: column;
+    }
+    a { color: var(--accent); }
+
+    /* nav */
+    .game-nav {
+      padding: 12px 16px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 12px;
+    }
+    .back-link { font-size: .9rem; text-decoration: none; }
+    .back-link:hover { text-decoration: underline; }
+    .game-nav h1 { font-size: 1.1rem; font-weight: 700; }
+
+    /* layout */
+    #gameContainer {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 24px 16px; gap: 20px;
+    }
+
+    /* hud */
+    .hud {
+      display: flex; gap: 32px; align-items: center;
+      font-size: 1rem; font-weight: 600;
+    }
+    .hud-item { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+    .hud-label { font-size: .7rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: .08em; }
+    .hud-value { font-size: 1.4rem; font-weight: 700; }
+    #timerVal { color: var(--warn); }
+    #timerVal.urgent { color: var(--danger); animation: pulse .6s ease-in-out infinite alternate; }
+    #scoreVal { color: var(--accent); }
+    #wordNumVal { color: var(--text-dim); }
+
+    @keyframes pulse { from { opacity: 1; } to { opacity: .5; } }
+
+    /* difficulty badge */
+    .difficulty-badge {
+      font-size: .75rem; font-weight: 700; padding: 3px 10px;
+      border-radius: 99px; text-transform: uppercase; letter-spacing: .08em;
+    }
+    .diff-easy   { background: #14532d; color: var(--success); }
+    .diff-medium { background: #78350f; color: var(--warn); }
+    .diff-hard   { background: #4c0519; color: var(--danger); }
+
+    /* scrambled word display */
+    .scrambled-word {
+      font-size: clamp(2rem, 8vw, 3.5rem);
+      font-weight: 800; letter-spacing: .15em;
+      color: var(--text);
+      background: var(--surface);
+      border: 2px solid var(--border);
+      border-radius: 16px;
+      padding: 24px 40px;
+      text-align: center;
+      user-select: none;
+    }
+
+    /* masked progress */
+    .masked-answer {
+      font-size: clamp(1.4rem, 5vw, 2rem);
+      letter-spacing: .2em; font-weight: 700;
+      color: var(--text-dim);
+      min-height: 2.4rem;
+    }
+    .masked-answer .revealed { color: var(--success); }
+
+    /* input row */
+    .input-row {
+      display: flex; gap: 10px; width: 100%; max-width: 420px;
+    }
+    .input-row input {
+      flex: 1; padding: 12px 16px;
+      background: var(--surface); color: var(--text);
+      border: 2px solid var(--border); border-radius: 10px;
+      font-size: 1.1rem; outline: none;
+      transition: border-color .15s;
+    }
+    .input-row input:focus { border-color: var(--accent); }
+    .input-row input.shake {
+      animation: shake .35s ease;
+      border-color: var(--danger);
+    }
+    @keyframes shake {
+      0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}
+    }
+    .input-row input.correct-flash {
+      border-color: var(--success);
+      animation: flashGreen .3s ease;
+    }
+    @keyframes flashGreen { from { background: #14532d; } to { background: var(--surface); } }
+
+    /* buttons */
+    .btn {
+      padding: 12px 22px; border: none; border-radius: 10px;
+      font-size: .95rem; font-weight: 700; cursor: pointer;
+      transition: opacity .15s, transform .1s;
+    }
+    .btn:hover { opacity: .85; transform: translateY(-1px); }
+    .btn:active { transform: translateY(0); }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-hint    { background: #78350f; color: var(--warn); }
+    .btn-skip    { background: #1e1e2e; color: var(--text-dim); border: 1px solid var(--border); }
+    .btn:disabled { opacity: .35; cursor: not-allowed; transform: none; }
+
+    .action-row {
+      display: flex; gap: 10px;
+    }
+
+    /* feedback message */
+    .feedback {
+      font-size: .95rem; font-weight: 600; height: 1.4em;
+      transition: color .2s;
+    }
+
+    /* panels */
+    .panel {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; padding: 40px 48px;
+      display: flex; flex-direction: column; align-items: center;
+      gap: 20px; max-width: 440px; width: 100%;
+      text-align: center;
+    }
+    .panel h2 { font-size: 1.8rem; font-weight: 800; }
+    .panel .final-score {
+      font-size: 3rem; font-weight: 800; color: var(--accent);
+    }
+    .panel p { color: var(--text-dim); font-size: .95rem; }
+    .panel .stats-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 12px; width: 100%;
+    }
+    .stat-cell {
+      background: var(--bg); border-radius: 10px; padding: 12px;
+    }
+    .stat-cell .s-label { font-size: .7rem; color: var(--text-dim); text-transform: uppercase; }
+    .stat-cell .s-val   { font-size: 1.3rem; font-weight: 700; margin-top: 2px; }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+  <nav class="game-nav">
+    <a href="../index.html" class="back-link">← Back to Games</a>
+    <h1>🔤 Word Scramble</h1>
+  </nav>
+
+  <div id="gameContainer">
+
+    <!-- Start screen -->
+    <div id="startPanel" class="panel">
+      <h2>Word Scramble</h2>
+      <p>Unscramble as many words as you can in <strong>60 seconds</strong>.<br>
+         Hints cost −5 pts · Skips cost −10 pts.</p>
+      <button class="btn btn-primary" id="startBtn">Start Game</button>
+    </div>
+
+    <!-- Game screen -->
+    <div id="gameScreen" class="hidden" style="display:flex;flex-direction:column;align-items:center;gap:18px;width:100%;max-width:520px;">
+      <div class="hud">
+        <div class="hud-item">
+          <span class="hud-label">Time</span>
+          <span class="hud-value" id="timerVal">60</span>
+        </div>
+        <div class="hud-item">
+          <span class="hud-label">Score</span>
+          <span class="hud-value" id="scoreVal">0</span>
+        </div>
+        <div class="hud-item">
+          <span class="hud-label">Word</span>
+          <span class="hud-value" id="wordNumVal">1</span>
+        </div>
+      </div>
+
+      <span class="difficulty-badge diff-easy" id="diffBadge">easy</span>
+
+      <div class="scrambled-word" id="scrambledWord">LOADING</div>
+
+      <div class="masked-answer" id="maskedAnswer"></div>
+
+      <div class="input-row">
+        <input type="text" id="guessInput" placeholder="Type your answer…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+        <button class="btn btn-primary" id="submitBtn">Submit</button>
+      </div>
+
+      <div class="action-row">
+        <button class="btn btn-hint" id="hintBtn">💡 Hint (−5)</button>
+        <button class="btn btn-skip" id="skipBtn">⏭ Skip (−10)</button>
+      </div>
+
+      <div class="feedback" id="feedback"></div>
+    </div>
+
+    <!-- Game over screen -->
+    <div id="overPanel" class="panel hidden">
+      <h2>⏱ Time's Up!</h2>
+      <div class="final-score" id="finalScore">0</div>
+      <p>Final Score</p>
+      <div class="stats-grid">
+        <div class="stat-cell">
+          <div class="s-label">Words Solved</div>
+          <div class="s-val" id="statSolved">0</div>
+        </div>
+        <div class="stat-cell">
+          <div class="s-label">Words Skipped</div>
+          <div class="s-val" id="statSkipped">0</div>
+        </div>
+        <div class="stat-cell">
+          <div class="s-label">Hints Used</div>
+          <div class="s-val" id="statHints">0</div>
+        </div>
+        <div class="stat-cell">
+          <div class="s-label">Best Streak</div>
+          <div class="s-val" id="statStreak">0</div>
+        </div>
+      </div>
+      <button class="btn btn-primary" id="playAgainBtn">Play Again</button>
+    </div>
+
+  </div>
+
+  <script>
+  'use strict';
+
+  // ── Word list: [word, difficulty]  easy=1..4 letters, medium=5..6, hard=7+
+  const WORDS = [
+    // easy
+    ['cat',    'easy'],  ['dog',   'easy'],  ['sun',    'easy'],
+    ['map',    'easy'],  ['hat',   'easy'],  ['run',    'easy'],
+    ['cup',    'easy'],  ['bed',   'easy'],  ['jar',    'easy'],
+    ['fin',    'easy'],  ['log',   'easy'],  ['fog',    'easy'],
+    ['jet',    'easy'],  ['lip',   'easy'],  ['mud',    'easy'],
+    ['oak',    'easy'],  ['paw',   'easy'],  ['ray',    'easy'],
+    // medium
+    ['plant',  'medium'],['brave',  'medium'],['chess',  'medium'],
+    ['climb',  'medium'],['flute',  'medium'],['grain',  'medium'],
+    ['judge',  'medium'],['lemon',  'medium'],['medal',  'medium'],
+    ['nurse',  'medium'],['ocean',  'medium'],['peach',  'medium'],
+    ['quilt',  'medium'],['river',  'medium'],['slide',  'medium'],
+    ['tiger',  'medium'],['vault',  'medium'],['wheat',  'medium'],
+    ['yeast',  'medium'],['zebra',  'medium'],['orbit',  'medium'],
+    ['frost',  'medium'],['gleam',  'medium'],['kneel',  'medium'],
+    // hard
+    ['blanket', 'hard'], ['captain', 'hard'], ['dolphin', 'hard'],
+    ['eclipse', 'hard'], ['fantasy', 'hard'], ['glacier', 'hard'],
+    ['harmony', 'hard'], ['insight', 'hard'], ['journey', 'hard'],
+    ['kingdom', 'hard'], ['lantern', 'hard'], ['marmite', 'hard'],
+    ['network', 'hard'], ['pilgrim', 'hard'], ['quantum', 'hard'],
+    ['rainbow', 'hard'], ['silence', 'hard'], ['turmoil', 'hard'],
+    ['voltage', 'hard'], ['whisper', 'hard'],
+  ];
+
+  // ── Scramble helpers ─────────────────────────────────────────────────────
+  function shuffle(arr) {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  function scramble(word) {
+    if (word.length <= 2) return word.split('').reverse().join('');
+    let result;
+    let attempts = 0;
+    do {
+      result = shuffle(word.split('')).join('');
+      attempts++;
+    } while (result === word && attempts < 20);
+    return result;
+  }
+
+  // ── State ─────────────────────────────────────────────────────────────────
+  let score       = 0;
+  let timeLeft    = 60;
+  let wordIndex   = 0;
+  let currentWord = '';
+  let currentDiff = '';
+  let scrambled   = '';
+  let hintRevealed = 0;
+  let wordsQueue  = [];
+  let timerID     = null;
+  let solved      = 0;
+  let skipped     = 0;
+  let hintsUsed   = 0;
+  let streak      = 0;
+  let bestStreak  = 0;
+  let gameActive  = false;
+
+  // ── DOM refs ──────────────────────────────────────────────────────────────
+  const startPanel   = document.getElementById('startPanel');
+  const gameScreen   = document.getElementById('gameScreen');
+  const overPanel    = document.getElementById('overPanel');
+  const scrambledEl  = document.getElementById('scrambledWord');
+  const maskedEl     = document.getElementById('maskedAnswer');
+  const guessInput   = document.getElementById('guessInput');
+  const submitBtn    = document.getElementById('submitBtn');
+  const hintBtn      = document.getElementById('hintBtn');
+  const skipBtn      = document.getElementById('skipBtn');
+  const timerEl      = document.getElementById('timerVal');
+  const scoreEl      = document.getElementById('scoreVal');
+  const wordNumEl    = document.getElementById('wordNumVal');
+  const diffBadge    = document.getElementById('diffBadge');
+  const feedbackEl   = document.getElementById('feedback');
+  const finalScoreEl = document.getElementById('finalScore');
+  const statSolved   = document.getElementById('statSolved');
+  const statSkipped  = document.getElementById('statSkipped');
+  const statHints    = document.getElementById('statHints');
+  const statStreak   = document.getElementById('statStreak');
+
+  // ── Masked answer display ─────────────────────────────────────────────────
+  function renderMask() {
+    maskedEl.innerHTML = currentWord
+      .split('')
+      .map((ch, i) => i < hintRevealed
+        ? `<span class="revealed">${ch.toUpperCase()}</span>`
+        : '_')
+      .join(' ');
+  }
+
+  // ── Load next word ─────────────────────────────────────────────────────────
+  function nextWord() {
+    if (wordsQueue.length === 0) return endGame();
+    [currentWord, currentDiff] = wordsQueue.shift();
+    scrambled = scramble(currentWord);
+    hintRevealed = 0;
+    wordIndex++;
+
+    scrambledEl.textContent = scrambled.toUpperCase();
+    renderMask();
+    guessInput.value = '';
+    guessInput.disabled = false;
+    submitBtn.disabled = false;
+    hintBtn.disabled = false;
+
+    // Difficulty styling
+    diffBadge.textContent = currentDiff;
+    diffBadge.className = 'difficulty-badge diff-' + currentDiff;
+
+    wordNumEl.textContent = wordIndex;
+    feedbackEl.textContent = '';
+    feedbackEl.style.color = '';
+    guessInput.focus();
+  }
+
+  // ── Timer tick ───────────────────────────────────────────────────────────
+  function tick() {
+    timeLeft--;
+    timerEl.textContent = timeLeft;
+    if (timeLeft <= 10) timerEl.classList.add('urgent');
+    if (timeLeft <= 0) endGame();
+  }
+
+  // ── Start game ────────────────────────────────────────────────────────────
+  function startGame() {
+    score = 0; timeLeft = 60; wordIndex = 0;
+    solved = 0; skipped = 0; hintsUsed = 0;
+    streak = 0; bestStreak = 0;
+    gameActive = true;
+
+    // Shuffle a fresh copy of the word list
+    wordsQueue = shuffle(WORDS.map(w => [...w]));
+
+    startPanel.classList.add('hidden');
+    overPanel.classList.add('hidden');
+    gameScreen.classList.remove('hidden');
+    gameScreen.style.display = 'flex';
+
+    timerEl.textContent = 60;
+    timerEl.classList.remove('urgent');
+    scoreEl.textContent = 0;
+    wordNumEl.textContent = 1;
+
+    nextWord();
+    timerID = setInterval(tick, 1000);
+  }
+
+  // ── End game ──────────────────────────────────────────────────────────────
+  function endGame() {
+    if (!gameActive) return;
+    gameActive = false;
+    clearInterval(timerID);
+
+    guessInput.disabled = true;
+    submitBtn.disabled  = true;
+    hintBtn.disabled    = true;
+    skipBtn.disabled    = true;
+
+    gameScreen.classList.add('hidden');
+    overPanel.classList.remove('hidden');
+
+    finalScoreEl.textContent = score;
+    statSolved.textContent   = solved;
+    statSkipped.textContent  = skipped;
+    statHints.textContent    = hintsUsed;
+    statStreak.textContent   = bestStreak;
+
+    window.dispatchEvent(new CustomEvent('gameOver', {
+      detail: { game: 'word-scramble', score }
+    }));
+  }
+
+  // ── Score calculation ─────────────────────────────────────────────────────
+  function calcWordScore() {
+    const diffBonus = currentDiff === 'hard' ? 30 : currentDiff === 'medium' ? 20 : 10;
+    const timeBonus = Math.floor(timeLeft * 0.5);
+    const hintPenalty = hintRevealed * 5;
+    return Math.max(0, diffBonus + timeBonus - hintPenalty);
+  }
+
+  // ── Submit guess ──────────────────────────────────────────────────────────
+  function submitGuess() {
+    if (!gameActive) return;
+    const guess = guessInput.value.trim().toLowerCase();
+    if (!guess) return;
+
+    if (guess === currentWord.toLowerCase()) {
+      const earned = calcWordScore();
+      score += earned;
+      scoreEl.textContent = score;
+      solved++;
+      streak++;
+      if (streak > bestStreak) bestStreak = streak;
+
+      feedbackEl.textContent = `✓ +${earned} pts${streak >= 3 ? ' 🔥 x' + streak : ''}`;
+      feedbackEl.style.color = 'var(--success)';
+
+      guessInput.classList.add('correct-flash');
+      setTimeout(() => { guessInput.classList.remove('correct-flash'); nextWord(); }, 400);
+    } else {
+      feedbackEl.textContent = '✗ Try again!';
+      feedbackEl.style.color = 'var(--danger)';
+      guessInput.classList.add('shake');
+      setTimeout(() => guessInput.classList.remove('shake'), 400);
+      guessInput.value = '';
+    }
+  }
+
+  // ── Hint ─────────────────────────────────────────────────────────────────
+  function useHint() {
+    if (!gameActive || hintRevealed >= currentWord.length) return;
+    hintRevealed++;
+    hintsUsed++;
+    score = Math.max(0, score - 5);
+    scoreEl.textContent = score;
+    renderMask();
+    feedbackEl.textContent = '💡 −5 pts';
+    feedbackEl.style.color = 'var(--warn)';
+    if (hintRevealed >= currentWord.length) hintBtn.disabled = true;
+  }
+
+  // ── Skip ──────────────────────────────────────────────────────────────────
+  function skipWord() {
+    if (!gameActive) return;
+    score = Math.max(0, score - 10);
+    scoreEl.textContent = score;
+    skipped++;
+    streak = 0;
+    feedbackEl.textContent = `⏭ Skipped — answer: ${currentWord.toUpperCase()} (−10)`;
+    feedbackEl.style.color = 'var(--text-dim)';
+    setTimeout(nextWord, 600);
+  }
+
+  // ── Event listeners ───────────────────────────────────────────────────────
+  document.getElementById('startBtn').addEventListener('click', startGame);
+  document.getElementById('playAgainBtn').addEventListener('click', startGame);
+  submitBtn.addEventListener('click', submitGuess);
+  hintBtn.addEventListener('click', useHint);
+  skipBtn.addEventListener('click', skipWord);
+
+  guessInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') submitGuess();
+  });
+  </script>
+
+</body>
+</html>
