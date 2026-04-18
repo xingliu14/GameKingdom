@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Math Blitz — GameKingdom</title>
+  <meta name="description" content="60 seconds of rapid-fire arithmetic. How many can you solve?" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0f0f13; --surface: #1a1a24; --border: #2e2e3e;
+      --accent: #7c5cfc; --text: #e8e8f0; --text-dim: #888899;
+    }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100dvh; display: flex; flex-direction: column;
+    }
+    a { color: var(--accent); }
+
+    /* nav bar */
+    .game-nav {
+      padding: 12px 16px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .back-link { font-size: .9rem; text-decoration: none; }
+    .back-link:hover { text-decoration: underline; }
+    .game-nav h1 { font-size: 1.1rem; font-weight: 700; }
+
+    /* game container */
+    #gameContainer {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+      gap: 20px;
+    }
+
+    /* start screen */
+    #startScreen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      text-align: center;
+      max-width: 400px;
+    }
+    #startScreen h2 { font-size: 2rem; color: var(--accent); }
+    #startScreen p { color: var(--text-dim); line-height: 1.6; }
+
+    /* play screen */
+    #playScreen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      width: 100%;
+      max-width: 480px;
+    }
+
+    /* HUD */
+    .hud {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      gap: 12px;
+    }
+    .hud-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 18px;
+      text-align: center;
+      flex: 1;
+    }
+    .hud-box .label {
+      font-size: .7rem;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--text-dim);
+      margin-bottom: 2px;
+    }
+    .hud-box .value {
+      font-size: 1.4rem;
+      font-weight: 700;
+    }
+    #timerValue { color: var(--accent); transition: color .2s; }
+    #timerValue.urgent { color: #f05; }
+    #scoreValue { color: #4ade80; }
+
+    /* problem card */
+    #problemCard {
+      background: var(--surface);
+      border: 2px solid var(--border);
+      border-radius: 16px;
+      padding: 32px 40px;
+      text-align: center;
+      width: 100%;
+      transition: border-color .15s, background .15s;
+    }
+    #problemCard.correct {
+      border-color: #4ade80;
+      background: #0d2218;
+    }
+    #problemCard.wrong {
+      border-color: #f05050;
+      background: #1f0d0d;
+    }
+    #problemText {
+      font-size: 2.8rem;
+      font-weight: 700;
+      letter-spacing: .02em;
+      user-select: none;
+    }
+    #feedback {
+      font-size: .9rem;
+      font-weight: 600;
+      margin-top: 8px;
+      min-height: 1.2em;
+      transition: opacity .2s;
+    }
+    #feedback.correct { color: #4ade80; }
+    #feedback.wrong   { color: #f05050; }
+
+    /* answer row */
+    .answer-row {
+      display: flex;
+      gap: 10px;
+      width: 100%;
+    }
+    #answerInput {
+      flex: 1;
+      background: var(--surface);
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-size: 1.3rem;
+      color: var(--text);
+      outline: none;
+      transition: border-color .15s;
+      /* hide number spinner arrows */
+      -moz-appearance: textfield;
+    }
+    #answerInput::-webkit-outer-spin-button,
+    #answerInput::-webkit-inner-spin-button { -webkit-appearance: none; }
+    #answerInput:focus { border-color: var(--accent); }
+    #submitBtn {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 12px 22px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity .15s;
+    }
+    #submitBtn:hover { opacity: .85; }
+
+    /* end screen */
+    #endScreen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      text-align: center;
+      max-width: 420px;
+      width: 100%;
+    }
+    #endScreen h2 { font-size: 1.8rem; color: var(--accent); }
+    .stat-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      width: 100%;
+    }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 12px;
+    }
+    .stat-card .s-label {
+      font-size: .72rem;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--text-dim);
+      margin-bottom: 4px;
+    }
+    .stat-card .s-value {
+      font-size: 2rem;
+      font-weight: 700;
+    }
+    #statCorrect  .s-value { color: #4ade80; }
+    #statAccuracy .s-value { color: var(--accent); }
+
+    /* shared button */
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 14px 36px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity .15s;
+    }
+    .btn-primary:hover { opacity: .85; }
+
+    @media (max-width: 420px) {
+      #problemText { font-size: 2rem; }
+      #problemCard { padding: 24px 20px; }
+      .hud-box .value { font-size: 1.1rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="game-nav">
+    <a href="../index.html" class="back-link">← GameKingdom</a>
+    <h1>Math Blitz</h1>
+  </nav>
+
+  <div id="gameContainer">
+
+    <!-- START SCREEN -->
+    <div id="startScreen">
+      <h2>⚡ Math Blitz</h2>
+      <p>Answer as many arithmetic problems as you can in <strong>60 seconds</strong>. Problems get harder as time runs out!</p>
+      <button class="btn-primary" id="startBtn">Start Game</button>
+    </div>
+
+    <!-- PLAY SCREEN -->
+    <div id="playScreen">
+      <div class="hud">
+        <div class="hud-box">
+          <div class="label">Time</div>
+          <div class="value" id="timerValue">60</div>
+        </div>
+        <div class="hud-box">
+          <div class="label">Score</div>
+          <div class="value" id="scoreValue">0</div>
+        </div>
+        <div class="hud-box">
+          <div class="label">Streak</div>
+          <div class="value" id="streakValue">0</div>
+        </div>
+      </div>
+
+      <div id="problemCard">
+        <div id="problemText">2 + 2</div>
+        <div id="feedback"></div>
+      </div>
+
+      <div class="answer-row">
+        <input id="answerInput" type="number" placeholder="Your answer" autocomplete="off" />
+        <button id="submitBtn">Enter</button>
+      </div>
+    </div>
+
+    <!-- END SCREEN -->
+    <div id="endScreen">
+      <h2>Time's Up!</h2>
+      <div class="stat-grid">
+        <div class="stat-card" id="statCorrect">
+          <div class="s-label">Correct</div>
+          <div class="s-value" id="endCorrect">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="s-label">Attempted</div>
+          <div class="s-value" id="endAttempted">0</div>
+        </div>
+        <div class="stat-card" id="statAccuracy">
+          <div class="s-label">Accuracy</div>
+          <div class="s-value" id="endAccuracy">0%</div>
+        </div>
+        <div class="stat-card">
+          <div class="s-label">Best Streak</div>
+          <div class="s-value" id="endStreak">0</div>
+        </div>
+      </div>
+      <button class="btn-primary" id="playAgainBtn">Play Again</button>
+    </div>
+
+  </div>
+
+  <script>
+    const TOTAL_TIME = 60;
+
+    const startScreen   = document.getElementById('startScreen');
+    const playScreen    = document.getElementById('playScreen');
+    const endScreen     = document.getElementById('endScreen');
+    const timerEl       = document.getElementById('timerValue');
+    const scoreEl       = document.getElementById('scoreValue');
+    const streakEl      = document.getElementById('streakValue');
+    const problemEl     = document.getElementById('problemText');
+    const feedbackEl    = document.getElementById('feedback');
+    const problemCard   = document.getElementById('problemCard');
+    const answerInput   = document.getElementById('answerInput');
+    const submitBtn     = document.getElementById('submitBtn');
+    const startBtn      = document.getElementById('startBtn');
+    const playAgainBtn  = document.getElementById('playAgainBtn');
+
+    let timeLeft, score, correct, attempted, streak, bestStreak;
+    let correctAnswer, timerInterval, feedbackTimeout;
+
+    function randInt(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function getDifficulty() {
+      const elapsed = TOTAL_TIME - timeLeft;
+      if (elapsed < 15) return 'easy';
+      if (elapsed < 35) return 'medium';
+      return 'hard';
+    }
+
+    function generateProblem() {
+      const diff = getDifficulty();
+      let a, b, op, text, answer;
+
+      if (diff === 'easy') {
+        op = ['+', '−', '×'][randInt(0, 1)];
+        a  = randInt(1, 20);
+        b  = randInt(1, 20);
+      } else if (diff === 'medium') {
+        op = ['+', '−', '×'][randInt(0, 2)];
+        a  = randInt(5, 50);
+        b  = randInt(2, 20);
+      } else {
+        op = ['+', '−', '×'][randInt(0, 2)];
+        a  = randInt(10, 99);
+        b  = randInt(2, 30);
+      }
+
+      if (op === '+')  answer = a + b;
+      if (op === '−')  answer = a - b;
+      if (op === '×')  answer = a * b;
+
+      text = `${a} ${op} ${b} = ?`;
+      return { text, answer };
+    }
+
+    function nextProblem() {
+      const p = generateProblem();
+      correctAnswer = p.answer;
+      problemEl.textContent = p.text;
+      answerInput.value = '';
+      answerInput.focus();
+    }
+
+    function flashFeedback(type, message) {
+      clearTimeout(feedbackTimeout);
+
+      problemCard.classList.remove('correct', 'wrong');
+      feedbackEl.classList.remove('correct', 'wrong');
+
+      void problemCard.offsetWidth; // force reflow to restart transition
+
+      problemCard.classList.add(type);
+      feedbackEl.classList.add(type);
+      feedbackEl.textContent = message;
+
+      feedbackTimeout = setTimeout(() => {
+        problemCard.classList.remove('correct', 'wrong');
+        feedbackEl.classList.remove('correct', 'wrong');
+        feedbackEl.textContent = '';
+      }, 500);
+    }
+
+    function submitAnswer() {
+      const raw = answerInput.value.trim();
+      if (raw === '') return;
+
+      const userAnswer = parseInt(raw, 10);
+      if (isNaN(userAnswer)) return;
+
+      attempted++;
+
+      if (userAnswer === correctAnswer) {
+        correct++;
+        streak++;
+        if (streak > bestStreak) bestStreak = streak;
+        score += streak > 1 ? streak : 1; // streak bonus
+        flashFeedback('correct', streak > 1 ? `+${streak} streak!` : '✓ Correct!');
+      } else {
+        streak = 0;
+        flashFeedback('wrong', `✗ Answer: ${correctAnswer}`);
+      }
+
+      scoreEl.textContent  = score;
+      streakEl.textContent = streak;
+      nextProblem();
+    }
+
+    function tick() {
+      timeLeft--;
+      timerEl.textContent = timeLeft;
+      if (timeLeft <= 10) {
+        timerEl.classList.add('urgent');
+      }
+      if (timeLeft <= 0) {
+        endGame();
+      }
+    }
+
+    function startGame() {
+      timeLeft   = TOTAL_TIME;
+      score      = 0;
+      correct    = 0;
+      attempted  = 0;
+      streak     = 0;
+      bestStreak = 0;
+
+      timerEl.textContent  = TOTAL_TIME;
+      timerEl.classList.remove('urgent');
+      scoreEl.textContent  = '0';
+      streakEl.textContent = '0';
+      feedbackEl.textContent = '';
+      problemCard.classList.remove('correct', 'wrong');
+
+      startScreen.style.display  = 'none';
+      endScreen.style.display    = 'none';
+      playScreen.style.display   = 'flex';
+
+      nextProblem();
+      timerInterval = setInterval(tick, 1000);
+    }
+
+    function endGame() {
+      clearInterval(timerInterval);
+      playScreen.style.display = 'none';
+      endScreen.style.display  = 'flex';
+
+      const accuracy = attempted > 0 ? Math.round((correct / attempted) * 100) : 0;
+      document.getElementById('endCorrect').textContent   = correct;
+      document.getElementById('endAttempted').textContent = attempted;
+      document.getElementById('endAccuracy').textContent  = accuracy + '%';
+      document.getElementById('endStreak').textContent    = bestStreak;
+
+      window.dispatchEvent(new CustomEvent('gameOver', {
+        detail: { game: 'math-blitz', score, correct, attempted, accuracy, bestStreak }
+      }));
+    }
+
+    startBtn.addEventListener('click', startGame);
+    playAgainBtn.addEventListener('click', startGame);
+    submitBtn.addEventListener('click', submitAnswer);
+    answerInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') submitAnswer();
+    });
+  </script>
+
+</body>
+</html>
