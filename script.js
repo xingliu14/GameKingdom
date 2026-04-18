@@ -132,6 +132,15 @@ const GAMES = [
 
   // ----- Word -----
   {
+    id: 'typing-terror',
+    title: 'Typing Terror',
+    desc: 'Type falling words before they destroy your city! Special words grant powerful bonuses.',
+    category: 'word',
+    icon: '⌨️',
+    path: 'games/typing-terror.html',
+    tags: [],
+  },
+  {
     id: 'word-scramble',
     title: 'Word Scramble',
     desc: 'Unscramble the jumbled letters to form the hidden word.',
