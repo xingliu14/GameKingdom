@@ -58,9 +58,9 @@ const GAMES = [
   {
     id: 'tap-ninja',
     title: 'Tap Ninja',
-    desc: 'Tap or click the falling stars before they hit the ground.',
+    desc: 'Tap fast to slice ninjas before they escape!',
     category: 'action',
-    icon: '⭐',
+    icon: '🥷',
     path: 'games/tap-ninja.html',
     tags: [],
   },

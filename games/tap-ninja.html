@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tap Ninja — GameKingdom</title>
+  <meta name="description" content="Tap fast to slice ninjas before they escape!" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0f0f13; --surface: #1a1a24; --border: #2e2e3e;
+      --accent: #7c5cfc; --text: #e8e8f0; --text-dim: #888899;
+    }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100dvh; display: flex; flex-direction: column;
+      overflow: hidden;
+    }
+    a { color: var(--accent); }
+
+    .game-nav {
+      padding: 12px 16px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+    .back-link { font-size: .9rem; text-decoration: none; }
+    .back-link:hover { text-decoration: underline; }
+    .game-nav h1 { font-size: 1.1rem; font-weight: 700; }
+
+    #gameContainer {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+
+    #gameCanvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      cursor: crosshair;
+      touch-action: none;
+    }
+
+    #overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      background: rgba(15, 15, 19, 0.88);
+    }
+
+    #overlay h2 {
+      font-size: clamp(1.8rem, 5vw, 3rem);
+      font-weight: 800;
+      color: var(--accent);
+    }
+
+    #overlay p {
+      font-size: clamp(1rem, 2.5vw, 1.3rem);
+      color: var(--text-dim);
+      text-align: center;
+      max-width: 340px;
+      line-height: 1.5;
+    }
+
+    .final-score {
+      font-size: clamp(2rem, 6vw, 4rem);
+      font-weight: 900;
+      color: var(--text);
+    }
+
+    #btnStart, #btnRestart {
+      padding: 14px 36px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity .15s;
+    }
+    #btnStart:hover, #btnRestart:hover { opacity: .85; }
+
+    .hint {
+      font-size: .85rem;
+      color: var(--text-dim);
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="game-nav">
+    <a href="../index.html" class="back-link">← GameKingdom</a>
+    <h1>🥷 Tap Ninja</h1>
+  </nav>
+
+  <div id="gameContainer">
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="overlay">
+      <h2>🥷 Tap Ninja</h2>
+      <p>Tap or click the ninja stars before they vanish. Miss too many and it's over!</p>
+      <button id="btnStart">Start Game</button>
+      <span class="hint">Speed increases every 10 points</span>
+    </div>
+  </div>
+
+  <script>
+    'use strict';
+
+    const canvas = document.getElementById('gameCanvas');
+    const ctx    = canvas.getContext('2d');
+    const overlay = document.getElementById('overlay');
+    const btnStart = document.getElementById('btnStart');
+
+    // --- CSS variable colours resolved at runtime ---
+    const style = getComputedStyle(document.documentElement);
+    const C = {
+      bg:      () => style.getPropertyValue('--bg').trim()      || '#0f0f13',
+      surface: () => style.getPropertyValue('--surface').trim() || '#1a1a24',
+      accent:  () => style.getPropertyValue('--accent').trim()  || '#7c5cfc',
+      text:    () => style.getPropertyValue('--text').trim()     || '#e8e8f0',
+    };
+
+    // --- resize canvas to fill container ---
+    function resize() {
+      const container = canvas.parentElement;
+      canvas.width  = container.clientWidth;
+      canvas.height = container.clientHeight;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    // --- Game state ---
+    let score, lives, targets, particles, gameActive, spawnTimer, spawnInterval, targetLife, raf;
+
+    function initState() {
+      score         = 0;
+      lives         = 3;
+      targets       = [];
+      particles     = [];
+      gameActive    = false;
+      spawnTimer    = 0;
+      spawnInterval = 1400; // ms between spawns
+      targetLife    = 2200; // ms a target lives before expiring
+    }
+    initState();
+
+    // --- difficulty scaling ---
+    function difficultyForScore(s) {
+      const tier = Math.floor(s / 10);
+      return {
+        spawnInterval: Math.max(450, 1400 - tier * 120),
+        targetLife:    Math.max(900, 2200 - tier * 140),
+      };
+    }
+
+    // --- Star polygon helpers ---
+    const STAR_OUTER = 28;
+    const STAR_INNER = 12;
+    const STAR_POINTS = 5;
+
+    function drawStar(cx, cy, outer, inner, points, rot) {
+      ctx.beginPath();
+      for (let i = 0; i < points * 2; i++) {
+        const r     = i % 2 === 0 ? outer : inner;
+        const angle = (Math.PI / points) * i + rot;
+        const x     = cx + r * Math.sin(angle);
+        const y     = cy - r * Math.cos(angle);
+        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+    }
+
+    // --- Spawn a target ---
+    function spawnTarget() {
+      const margin = STAR_OUTER + 10;
+      const x = margin + Math.random() * (canvas.width  - margin * 2);
+      const y = margin + Math.random() * (canvas.height - margin * 2);
+      targets.push({
+        x, y,
+        r:       STAR_OUTER,
+        born:    performance.now(),
+        life:    targetLife,
+        rot:     Math.random() * Math.PI * 2,
+        rotSpeed: (Math.random() - 0.5) * 0.04,
+        hue:     Math.random() < 0.3 ? 'gold' : 'accent', // variety
+        hit:     false,
+      });
+    }
+
+    // --- Slash particle burst ---
+    function addSlash(x, y) {
+      for (let i = 0; i < 12; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 2 + Math.random() * 4;
+        particles.push({
+          x, y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          life: 1,
+          decay: 0.04 + Math.random() * 0.04,
+          r:    2 + Math.random() * 3,
+          color: Math.random() < 0.5 ? '#f8d62b' : C.accent(),
+        });
+      }
+    }
+
+    // --- Miss particle burst (red) ---
+    function addMiss(x, y) {
+      for (let i = 0; i < 8; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 1.5 + Math.random() * 3;
+        particles.push({
+          x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
+          life: 1, decay: 0.05, r: 3, color: '#ff4466',
+        });
+      }
+    }
+
+    // --- HUD ---
+    function drawHUD() {
+      const pad = 16;
+      ctx.font = 'bold 20px "Segoe UI", system-ui, sans-serif';
+      ctx.textBaseline = 'top';
+
+      // Score
+      ctx.fillStyle = C.text();
+      ctx.fillText(`Score: ${score}`, pad, pad);
+
+      // Lives (hearts)
+      const hearts = '❤️'.repeat(lives) + '🖤'.repeat(Math.max(0, 3 - lives));
+      ctx.font = '22px serif';
+      ctx.fillText(hearts, canvas.width - pad - ctx.measureText(hearts).width, pad);
+    }
+
+    // --- Main render loop ---
+    let lastTime = 0;
+
+    function loop(ts) {
+      if (!gameActive) return;
+      const dt = ts - lastTime;
+      lastTime = ts;
+
+      // Clear
+      ctx.fillStyle = C.bg();
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Spawn
+      spawnTimer += dt;
+      if (spawnTimer >= spawnInterval) {
+        spawnTimer -= spawnInterval;
+        spawnTarget();
+      }
+
+      // Update & draw targets
+      const now = performance.now();
+      for (let i = targets.length - 1; i >= 0; i--) {
+        const t = targets[i];
+        const age     = now - t.born;
+        const progress = age / t.life;     // 0 → 1
+        const left    = 1 - progress;
+
+        if (progress >= 1 && !t.hit) {
+          // Expired — lose a life
+          addMiss(t.x, t.y);
+          targets.splice(i, 1);
+          lives--;
+          if (lives <= 0) { endGame(); return; }
+          continue;
+        }
+
+        t.rot += t.rotSpeed;
+
+        // pulse scale
+        const scale = 1 + 0.06 * Math.sin(age * 0.007);
+
+        // colour: gold or accent, fading out near expiry
+        const alpha = 0.4 + 0.6 * left;
+        if (t.hue === 'gold') {
+          ctx.fillStyle   = `rgba(248, 214, 43, ${alpha})`;
+          ctx.strokeStyle = `rgba(255, 180, 0, ${alpha})`;
+        } else {
+          ctx.fillStyle   = `rgba(124, 92, 252, ${alpha})`;
+          ctx.strokeStyle = `rgba(180, 150, 255, ${alpha})`;
+        }
+        ctx.lineWidth = 2.5;
+
+        ctx.save();
+        ctx.translate(t.x, t.y);
+        ctx.scale(scale, scale);
+        drawStar(0, 0, t.r, STAR_INNER, STAR_POINTS, t.rot);
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+
+        // countdown ring
+        ctx.beginPath();
+        ctx.arc(t.x, t.y, t.r + 8, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * left);
+        ctx.strokeStyle = `rgba(255,100,100,${0.5 * left})`;
+        ctx.lineWidth = 3;
+        ctx.stroke();
+      }
+
+      // Update & draw particles
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.12; // gravity
+        p.life -= p.decay;
+        if (p.life <= 0) { particles.splice(i, 1); continue; }
+        ctx.globalAlpha = p.life;
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      }
+
+      drawHUD();
+
+      raf = requestAnimationFrame(loop);
+    }
+
+    // --- Hit detection ---
+    function handleTap(cx, cy) {
+      if (!gameActive) return;
+      for (let i = targets.length - 1; i >= 0; i--) {
+        const t = targets[i];
+        const dx = cx - t.x, dy = cy - t.y;
+        if (dx * dx + dy * dy <= (t.r + 6) * (t.r + 6)) {
+          targets.splice(i, 1);
+          score++;
+          addSlash(cx, cy);
+          const diff = difficultyForScore(score);
+          spawnInterval = diff.spawnInterval;
+          targetLife    = diff.targetLife;
+          return;
+        }
+      }
+    }
+
+    canvas.addEventListener('pointerdown', e => {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width  / rect.width;
+      const scaleY = canvas.height / rect.height;
+      handleTap((e.clientX - rect.left) * scaleX, (e.clientY - rect.top) * scaleY);
+    });
+
+    // --- Start / End ---
+    function startGame() {
+      initState();
+      overlay.hidden = true;
+      gameActive = true;
+      lastTime   = performance.now();
+      raf        = requestAnimationFrame(loop);
+    }
+
+    function endGame() {
+      gameActive = false;
+      cancelAnimationFrame(raf);
+
+      window.dispatchEvent(new CustomEvent('gameOver', {
+        detail: { game: 'tap-ninja', score }
+      }));
+
+      overlay.hidden = false;
+      overlay.innerHTML = `
+        <h2>Game Over</h2>
+        <p>You sliced <span class="final-score">${score}</span> ninjas!</p>
+        <button id="btnRestart">Play Again</button>
+        <a href="../index.html" style="font-size:.9rem">← Back to GameKingdom</a>
+      `;
+      document.getElementById('btnRestart').addEventListener('click', startGame);
+    }
+
+    btnStart.addEventListener('click', startGame);
+  </script>
+
+</body>
+</html>
