@@ -47,6 +47,15 @@ const GAMES = [
 
   // ----- Action -----
   {
+    id: 'brick-blaster',
+    title: 'Brick Blaster',
+    desc: 'Break bricks with a bouncing ball, collect power-ups, and conquer 5 levels.',
+    category: 'action',
+    icon: '🧱',
+    path: 'games/brick-blaster.html',
+    tags: [],
+  },
+  {
     id: 'asteroid-dodge',
     title: 'Asteroid Dodge',
     desc: 'Steer your ship and survive the asteroid field as long as you can.',
