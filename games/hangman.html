@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hangman — GameKingdom</title>
+  <meta name="description" content="Guess the mystery word one letter at a time. Six wrong guesses and it's over!" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0f0f13; --surface: #1a1a24; --border: #2e2e3e;
+      --accent: #7c5cfc; --text: #e8e8f0; --text-dim: #888899;
+      --correct: #22c55e;
+      --wrong: #ef4444;
+    }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100dvh; display: flex; flex-direction: column;
+    }
+    a { color: var(--accent); }
+
+    .game-nav {
+      padding: 12px 16px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 12px;
+    }
+    .back-link { font-size: .9rem; text-decoration: none; }
+    .back-link:hover { text-decoration: underline; }
+    .game-nav h1 { font-size: 1.1rem; font-weight: 700; }
+
+    #gameContainer {
+      flex: 1;
+      display: flex; flex-direction: column; align-items: center;
+      padding: 20px 16px 40px;
+      gap: 18px;
+    }
+
+    /* scoreboard */
+    .scoreboard { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+    .score-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; padding: 8px 20px; text-align: center; min-width: 72px;
+    }
+    .score-label {
+      font-size: .72rem; font-weight: 700; letter-spacing: .05em;
+      text-transform: uppercase; color: var(--text-dim);
+    }
+    .score-label.wins   { color: var(--correct); }
+    .score-label.losses { color: var(--wrong); }
+    .score-value { font-size: 1.6rem; font-weight: 800; line-height: 1.2; }
+
+    /* hangman SVG */
+    .hangman-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #hangmanSvg {
+      width: clamp(160px, 45vw, 220px);
+      height: auto;
+    }
+    .gallows { stroke: var(--text-dim); stroke-width: 3; stroke-linecap: round; fill: none; }
+    .part    { stroke: var(--text);     stroke-width: 3; stroke-linecap: round; fill: none; display: none; }
+    .part.head { fill: none; }
+    .part.visible { display: block; }
+    .part.dead { stroke: var(--wrong); }
+
+    /* wrong guesses */
+    .wrong-count {
+      font-size: .9rem; color: var(--text-dim); font-weight: 600;
+    }
+    .wrong-count span { color: var(--wrong); font-weight: 800; }
+
+    /* status */
+    .status-msg {
+      font-size: 1.1rem; font-weight: 700; min-height: 1.5rem; text-align: center;
+    }
+    .status-msg.win  { color: var(--correct); }
+    .status-msg.lose { color: var(--wrong); }
+
+    /* word display */
+    .word-display {
+      display: flex; gap: 6px; flex-wrap: wrap; justify-content: center;
+      max-width: min(500px, 90vw);
+    }
+    .letter-slot {
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+      min-width: 28px;
+    }
+    .letter-char {
+      font-size: clamp(1.2rem, 5vw, 1.8rem);
+      font-weight: 800;
+      height: 2rem;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text);
+      transition: opacity .2s;
+    }
+    .letter-char.hidden { opacity: 0; }
+    .letter-char.revealed { color: var(--correct); }
+    .letter-char.shown    { color: var(--wrong); }
+    .letter-line {
+      width: 100%; height: 2px; background: var(--border);
+      border-radius: 1px;
+    }
+
+    /* keyboard */
+    .keyboard {
+      display: flex; flex-direction: column; gap: 6px; align-items: center;
+    }
+    .key-row { display: flex; gap: 5px; flex-wrap: wrap; justify-content: center; }
+    .key-btn {
+      width: clamp(28px, 8vw, 38px);
+      height: clamp(32px, 9vw, 44px);
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      font-size: clamp(.75rem, 2.5vw, .95rem);
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .1s, color .1s, border-color .1s, opacity .1s;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .key-btn:hover:not(:disabled) { background: #222232; }
+    .key-btn:disabled { opacity: .35; cursor: default; }
+    .key-btn.correct { background: var(--correct); border-color: var(--correct); color: #fff; }
+    .key-btn.wrong   { background: #2a1a1a; border-color: var(--wrong); color: var(--wrong); opacity: .5; }
+
+    /* hint */
+    .hint-text {
+      font-size: .82rem; color: var(--text-dim); font-style: italic;
+      min-height: 1.2rem; text-align: center;
+    }
+
+    /* buttons */
+    .btn-row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+    .action-btn {
+      padding: 8px 22px; border-radius: 7px;
+      border: 1px solid var(--border); background: var(--surface);
+      color: var(--text); font-size: .88rem; font-weight: 600;
+      cursor: pointer; transition: background .15s;
+    }
+    .action-btn:hover { background: #222232; }
+    .action-btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .action-btn.primary:hover { background: #6a4de0; }
+  </style>
+</head>
+<body>
+
+  <nav class="game-nav">
+    <a href="../index.html" class="back-link">← GameKingdom</a>
+    <h1>Hangman</h1>
+  </nav>
+
+  <div id="gameContainer">
+
+    <div class="scoreboard">
+      <div class="score-card">
+        <div class="score-label wins">Wins</div>
+        <div class="score-value" id="scoreWins">0</div>
+      </div>
+      <div class="score-card">
+        <div class="score-label losses">Losses</div>
+        <div class="score-value" id="scoreLosses">0</div>
+      </div>
+    </div>
+
+    <!-- Hangman drawing -->
+    <div class="hangman-wrap">
+      <svg id="hangmanSvg" viewBox="0 0 180 200" xmlns="http://www.w3.org/2000/svg">
+        <!-- Gallows (always visible) -->
+        <line class="gallows" x1="10" y1="192" x2="95" y2="192"/>
+        <line class="gallows" x1="30" y1="192" x2="30" y2="8"/>
+        <line class="gallows" x1="30" y1="8"   x2="125" y2="8"/>
+        <line class="gallows" x1="125" y1="8"  x2="125" y2="30"/>
+        <!-- Parts (revealed one by one) -->
+        <circle id="p1" class="part head" cx="125" cy="48" r="18"/>
+        <line   id="p2" class="part body" x1="125" y1="66" x2="125" y2="112"/>
+        <line   id="p3" class="part larm" x1="125" y1="80" x2="100" y2="103"/>
+        <line   id="p4" class="part rarm" x1="125" y1="80" x2="150" y2="103"/>
+        <line   id="p5" class="part lleg" x1="125" y1="112" x2="103" y2="143"/>
+        <line   id="p6" class="part rleg" x1="125" y1="112" x2="147" y2="143"/>
+      </svg>
+    </div>
+
+    <div class="wrong-count">Wrong guesses: <span id="wrongCount">0</span> / 6</div>
+
+    <div class="status-msg" id="statusMsg">Guess the word!</div>
+
+    <div class="word-display" id="wordDisplay"></div>
+
+    <div class="hint-text" id="hintText"></div>
+
+    <div class="keyboard" id="keyboard"></div>
+
+    <div class="btn-row">
+      <button class="action-btn primary" id="newGameBtn">New Word</button>
+      <button class="action-btn" id="resetBtn">Reset Scores</button>
+    </div>
+
+  </div>
+
+  <script>
+    const WORD_LIST = [
+      // animals
+      { word: 'PENGUIN',  hint: 'Flightless bird of the Antarctic' },
+      { word: 'DOLPHIN',  hint: 'Intelligent ocean mammal' },
+      { word: 'GIRAFFE',  hint: 'Tallest animal on land' },
+      { word: 'FLAMINGO', hint: 'Pink wading bird' },
+      { word: 'ELEPHANT', hint: 'Largest land animal' },
+      { word: 'JAGUAR',   hint: 'Spotted big cat of the Americas' },
+      { word: 'OCTOPUS',  hint: 'Eight-armed sea creature' },
+      { word: 'RACCOON',  hint: 'Masked nocturnal forager' },
+      { word: 'HAMSTER',  hint: 'Small rodent with cheek pouches' },
+      { word: 'LOBSTER',  hint: 'Clawed crustacean' },
+      // food
+      { word: 'PRETZEL',  hint: 'Twisted baked snack' },
+      { word: 'BURRITO',  hint: 'Flour tortilla wrap' },
+      { word: 'BROWNIE',  hint: 'Dense chocolate baked square' },
+      { word: 'WAFFLE',   hint: 'Grid-patterned breakfast item' },
+      { word: 'NOODLE',   hint: 'Long thin pasta or dough strip' },
+      { word: 'MANGO',    hint: 'Sweet tropical stone fruit' },
+      { word: 'PRETZEL',  hint: 'Salty knotted snack' },
+      { word: 'COBBLER',  hint: 'Fruit dessert with biscuit topping' },
+      // nature / places
+      { word: 'VOLCANO',  hint: 'Mountain that erupts lava' },
+      { word: 'GLACIER',  hint: 'Slow-moving river of ice' },
+      { word: 'CANYON',   hint: 'Deep gorge carved by a river' },
+      { word: 'JUNGLE',   hint: 'Dense tropical forest' },
+      { word: 'TUNDRA',   hint: 'Flat treeless Arctic plain' },
+      { word: 'MONSOON',  hint: 'Seasonal torrential rains' },
+      { word: 'CRYSTAL',  hint: 'Solid mineral with geometric form' },
+      // objects / tech
+      { word: 'COMPASS',  hint: 'Navigation instrument' },
+      { word: 'LANTERN',  hint: 'Portable light source' },
+      { word: 'HAMMOCK',  hint: 'Hanging fabric bed' },
+      { word: 'CAPSULE',  hint: 'Small sealed container' },
+      { word: 'TELESCOPE',hint: 'Instrument for viewing distant objects' },
+      { word: 'KEYBOARD', hint: 'Input device with keys' },
+      { word: 'BROWSER',  hint: 'App for surfing the web' },
+      { word: 'NETWORK',  hint: 'Connected group of computers' },
+      // fun / misc
+      { word: 'WIZARD',   hint: 'Magical spell-caster' },
+      { word: 'PIRATE',   hint: 'Sea-going plunderer' },
+      { word: 'ROCKET',   hint: 'Vehicle for space travel' },
+      { word: 'CASTLE',   hint: 'Fortified stone dwelling' },
+      { word: 'PUZZLE',   hint: 'Problem requiring clever thinking' },
+      { word: 'TROPHY',   hint: 'Prize awarded to a winner' },
+      { word: 'BALLOON',  hint: 'Inflated rubber or latex sphere' },
+      { word: 'LANYARD',  hint: 'Cord worn around the neck' },
+      { word: 'JIGSAW',   hint: 'Puzzle with interlocking pieces' },
+      { word: 'JUGGLE',   hint: 'Keep multiple objects in the air' },
+      { word: 'GALAXY',   hint: 'Vast system of stars' },
+      { word: 'PLANET',   hint: 'Large body orbiting a star' },
+      { word: 'COMET',    hint: 'Icy body with a glowing tail' },
+    ];
+
+    const KEYBOARD_ROWS = ['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM'];
+    const PARTS = ['p1','p2','p3','p4','p5','p6'];
+    const MAX_WRONG = 6;
+
+    let word       = '';
+    let hint       = '';
+    let guessed    = new Set();
+    let wrongCount = 0;
+    let gameOver   = false;
+    let scores     = { wins: 0, losses: 0 };
+
+    // DOM
+    const wordDisplayEl = document.getElementById('wordDisplay');
+    const keyboardEl    = document.getElementById('keyboard');
+    const statusEl      = document.getElementById('statusMsg');
+    const wrongCountEl  = document.getElementById('wrongCount');
+    const hintEl        = document.getElementById('hintText');
+    const scoreWinsEl   = document.getElementById('scoreWins');
+    const scoreLossesEl = document.getElementById('scoreLosses');
+
+    // ── Build keyboard ────────────────────────────────────────────────────────
+    function buildKeyboard() {
+      keyboardEl.innerHTML = '';
+      KEYBOARD_ROWS.forEach(row => {
+        const div = document.createElement('div');
+        div.className = 'key-row';
+        for (const ch of row) {
+          const btn = document.createElement('button');
+          btn.className = 'key-btn';
+          btn.id = 'key-' + ch;
+          btn.textContent = ch;
+          btn.addEventListener('click', () => guess(ch));
+          div.appendChild(btn);
+        }
+        keyboardEl.appendChild(div);
+      });
+    }
+
+    // ── Render word ───────────────────────────────────────────────────────────
+    function renderWord(revealAll) {
+      wordDisplayEl.innerHTML = '';
+      for (const ch of word) {
+        const slot = document.createElement('div');
+        slot.className = 'letter-slot';
+        const char = document.createElement('div');
+        const line = document.createElement('div');
+        line.className = 'letter-line';
+
+        if (guessed.has(ch)) {
+          char.className = 'letter-char revealed';
+          char.textContent = ch;
+        } else if (revealAll) {
+          char.className = 'letter-char shown';
+          char.textContent = ch;
+        } else {
+          char.className = 'letter-char hidden';
+          char.textContent = ch;
+        }
+        slot.appendChild(char);
+        slot.appendChild(line);
+        wordDisplayEl.appendChild(slot);
+      }
+    }
+
+    // ── Update hangman drawing ────────────────────────────────────────────────
+    function renderHangman(isDead) {
+      PARTS.forEach((id, i) => {
+        const el = document.getElementById(id);
+        if (i < wrongCount) {
+          el.classList.add('visible');
+          if (isDead) el.classList.add('dead');
+          else el.classList.remove('dead');
+        } else {
+          el.classList.remove('visible', 'dead');
+        }
+      });
+    }
+
+    // ── Update key states ────────────────────────────────────────────────────
+    function updateKeys() {
+      for (const ch of 'ABCDEFGHIJKLMNOPQRSTUVWXYZ') {
+        const btn = document.getElementById('key-' + ch);
+        if (!btn) continue;
+        if (guessed.has(ch)) {
+          btn.disabled = true;
+          btn.classList.toggle('correct', word.includes(ch));
+          btn.classList.toggle('wrong', !word.includes(ch));
+        } else {
+          btn.disabled = gameOver;
+          btn.classList.remove('correct', 'wrong');
+        }
+      }
+    }
+
+    // ── Guess a letter ───────────────────────────────────────────────────────
+    function guess(ch) {
+      if (gameOver || guessed.has(ch)) return;
+      guessed.add(ch);
+
+      if (!word.includes(ch)) {
+        wrongCount++;
+        wrongCountEl.textContent = wrongCount;
+      }
+
+      const allRevealed = [...word].every(c => guessed.has(c));
+      const lost = wrongCount >= MAX_WRONG;
+
+      renderWord(lost);
+      renderHangman(lost);
+      updateKeys();
+
+      if (allRevealed && !lost) {
+        gameOver = true;
+        scores.wins++;
+        updateScores();
+        statusEl.textContent = 'You got it! 🎉';
+        statusEl.className = 'status-msg win';
+        hintEl.textContent = hint;
+        window.dispatchEvent(new CustomEvent('gameOver', {
+          detail: { game: 'hangman', result: 'win', word }
+        }));
+      } else if (lost) {
+        gameOver = true;
+        scores.losses++;
+        updateScores();
+        statusEl.textContent = 'Game over! The word was:';
+        statusEl.className = 'status-msg lose';
+        hintEl.textContent = hint;
+        window.dispatchEvent(new CustomEvent('gameOver', {
+          detail: { game: 'hangman', result: 'loss', word }
+        }));
+      } else {
+        const remaining = MAX_WRONG - wrongCount;
+        statusEl.textContent = remaining === 1 ? 'Last chance!' : 'Keep guessing…';
+        statusEl.className = 'status-msg';
+      }
+    }
+
+    // ── New game ──────────────────────────────────────────────────────────────
+    function newGame() {
+      const entry = WORD_LIST[Math.floor(Math.random() * WORD_LIST.length)];
+      word       = entry.word;
+      hint       = entry.hint;
+      guessed    = new Set();
+      wrongCount = 0;
+      gameOver   = false;
+
+      wrongCountEl.textContent = '0';
+      statusEl.textContent = 'Guess the word!';
+      statusEl.className = 'status-msg';
+      hintEl.textContent = '';
+
+      renderHangman(false);
+      renderWord(false);
+      buildKeyboard();
+      updateKeys();
+    }
+
+    function updateScores() {
+      scoreWinsEl.textContent   = scores.wins;
+      scoreLossesEl.textContent = scores.losses;
+    }
+
+    // ── Keyboard input ────────────────────────────────────────────────────────
+    document.addEventListener('keydown', e => {
+      const ch = e.key.toUpperCase();
+      if (/^[A-Z]$/.test(ch)) guess(ch);
+    });
+
+    document.getElementById('newGameBtn').addEventListener('click', newGame);
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      scores = { wins: 0, losses: 0 };
+      updateScores();
+      newGame();
+    });
+
+    // ── Init ──────────────────────────────────────────────────────────────────
+    buildKeyboard();
+    newGame();
+  </script>
+
+</body>
+</html>
