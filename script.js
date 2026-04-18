@@ -47,6 +47,15 @@ const GAMES = [
 
   // ----- Action -----
   {
+    id: 'space-shooter',
+    title: 'Space Shooter',
+    desc: 'Top-down shooter: blast waves of enemies, dodge bullets, and defeat epic bosses.',
+    category: 'action',
+    icon: '🛸',
+    path: 'games/space-shooter.html',
+    tags: [],
+  },
+  {
     id: 'pixel-runner',
     title: 'Pixel Runner',
     desc: 'Endless side-scrolling runner — jump, slide, and dodge obstacles as speed increases!',
