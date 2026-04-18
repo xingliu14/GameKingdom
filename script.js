@@ -107,6 +107,15 @@ const GAMES = [
 
   // ----- Strategy -----
   {
+    id: 'tower-defense',
+    title: 'Tower Defense',
+    desc: 'Place towers and defend against waves of enemies before they reach the end.',
+    category: 'strategy',
+    icon: '🗼',
+    path: 'games/tower-defense.html',
+    tags: [],
+  },
+  {
     id: 'tic-tac-toe',
     title: 'Tic-Tac-Toe',
     desc: 'Classic X vs O — play against a friend or the AI.',
