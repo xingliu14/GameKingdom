@@ -47,6 +47,15 @@ const GAMES = [
 
   // ----- Action -----
   {
+    id: 'pixel-runner',
+    title: 'Pixel Runner',
+    desc: 'Endless side-scrolling runner — jump, slide, and dodge obstacles as speed increases!',
+    category: 'action',
+    icon: '🏃',
+    path: 'games/pixel-runner.html',
+    tags: [],
+  },
+  {
     id: 'brick-blaster',
     title: 'Brick Blaster',
     desc: 'Break bricks with a bouncing ball, collect power-ups, and conquer 5 levels.',
@@ -115,6 +124,15 @@ const GAMES = [
   },
 
   // ----- Strategy -----
+  {
+    id: 'card-quest',
+    title: 'Card Quest',
+    desc: 'A deck-building RPG. Fight 10 enemies, collect reward cards, defeat the Dragon Boss.',
+    category: 'strategy',
+    icon: '⚔️',
+    path: 'games/card-quest.html',
+    tags: [],
+  },
   {
     id: 'tower-defense',
     title: 'Tower Defense',
