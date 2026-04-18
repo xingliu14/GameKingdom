@@ -3,8 +3,8 @@
 set -euo pipefail
 
 # ── Configure these ────────────────────────────────────────────────────────────
-VPS_USER="ubuntu"                         # SSH user on your VPS
-VPS_HOST="YOUR_VPS_IP_OR_DOMAIN"          # e.g. 203.0.113.42 or vps.example.com
+VPS_USER="root"                           # SSH user on your VPS
+VPS_HOST="89.167.72.63"                   # VPS IP address
 REMOTE_DIR="/var/www/gamekingdom"         # where files land on the VPS
 NGINX_CONF_REMOTE="/etc/nginx/conf.d/gamekingdom.conf"
 # ──────────────────────────────────────────────────────────────────────────────
@@ -23,7 +23,7 @@ rsync -avz --delete \
   "$VPS_USER@$VPS_HOST:$REMOTE_DIR/"
 
 echo "==> Uploading nginx config"
-scp "$SCRIPT_DIR/deploy/nginx-location.conf" \
+scp "$SCRIPT_DIR/deploy/ralph.nginx.conf" \
   "$VPS_USER@$VPS_HOST:/tmp/gamekingdom-nginx.conf"
 
 ssh "$VPS_USER@$VPS_HOST" bash -s << EOF
@@ -33,4 +33,4 @@ ssh "$VPS_USER@$VPS_HOST" bash -s << EOF
 EOF
 
 echo ""
-echo "Done! Your games are live. Visit https://YOUR_DOMAIN/play/"
+echo "Done! Your games are live. Visit http://89.167.72.63/play/"
