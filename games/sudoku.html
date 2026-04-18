@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sudoku — GameKingdom</title>
+  <meta name="description" content="Classic 9×9 Sudoku — fill every row, column, and box with 1–9." />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0f0f13; --surface: #1a1a24; --border: #2e2e3e;
+      --accent: #7c5cfc; --text: #e8e8f0; --text-dim: #888899;
+      --error: #ff5555;
+    }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100dvh; display: flex; flex-direction: column;
+    }
+    a { color: var(--accent); }
+
+    .game-nav {
+      padding: 12px 16px; background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 12px;
+    }
+    .back-link { font-size: .9rem; text-decoration: none; }
+    .back-link:hover { text-decoration: underline; }
+    .game-nav h1 { font-size: 1.1rem; font-weight: 700; }
+
+    #gameContainer {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; padding: 20px 16px; gap: 14px;
+    }
+
+    /* controls */
+    .controls {
+      display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+      justify-content: center;
+    }
+    .controls label { color: var(--text-dim); font-size: .9rem; }
+    select {
+      background: var(--surface); color: var(--text);
+      border: 1px solid var(--border); border-radius: 6px;
+      padding: 6px 10px; font-size: .9rem; cursor: pointer;
+    }
+    .btn {
+      background: var(--accent); color: #fff; border: none;
+      border-radius: 6px; padding: 7px 16px; font-size: .9rem;
+      font-weight: 600; cursor: pointer; transition: opacity .15s;
+    }
+    .btn:hover { opacity: .85; }
+    .btn-ghost {
+      background: transparent; color: var(--text-dim);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover { color: var(--text); border-color: var(--text-dim); opacity: 1; }
+
+    /* status bar */
+    .status-bar {
+      display: flex; gap: 24px; font-size: .9rem; color: var(--text-dim);
+    }
+    .status-bar span { color: var(--text); font-weight: 600; }
+
+    /* grid */
+    .sudoku-grid {
+      display: grid; grid-template-columns: repeat(9, 1fr);
+      width: min(360px, 94vw); height: min(360px, 94vw);
+      border: 2px solid var(--text);
+      outline: none;
+    }
+    .cell {
+      display: flex; align-items: center; justify-content: center;
+      font-size: clamp(14px, 3.8vw, 20px); font-weight: 500;
+      border: 1px solid #333346;
+      cursor: pointer; transition: background .08s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    /* thick borders for 3×3 boxes */
+    .cell[data-c="3"], .cell[data-c="6"] { border-left-color: var(--text-dim); border-left-width: 2px; }
+    .cell[data-r="3"], .cell[data-r="6"] { border-top-color: var(--text-dim); border-top-width: 2px; }
+
+    .cell.given    { color: var(--text); font-weight: 700; }
+    .cell.user     { color: var(--accent); }
+    .cell.conflict { color: var(--error); background: rgba(255,85,85,.12); }
+    .cell.selected { background: rgba(124,92,252,.28) !important; }
+    .cell.peer     { background: rgba(124,92,252,.07); }
+    .cell.same-num { background: rgba(124,92,252,.16); }
+
+    /* numpad */
+    .numpad {
+      display: grid; grid-template-columns: repeat(5, 1fr);
+      gap: 8px; width: min(360px, 94vw);
+    }
+    .num-btn {
+      background: var(--surface); color: var(--text);
+      border: 1px solid var(--border); border-radius: 8px;
+      padding: 12px 0; font-size: 1.1rem; font-weight: 600;
+      cursor: pointer; transition: background .1s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .num-btn:hover   { background: var(--border); }
+    .num-btn.active  { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .num-btn.erase   { font-size: .8rem; color: var(--text-dim); }
+    .num-btn.erase:hover { color: var(--text); }
+
+    /* win overlay */
+    .overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,.78);
+      display: flex; align-items: center; justify-content: center; z-index: 100;
+    }
+    .overlay.hidden { display: none; }
+    .overlay-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; padding: 36px 40px; text-align: center;
+      max-width: 320px; width: 90%;
+    }
+    .overlay-card .big { font-size: 2.4rem; margin-bottom: 6px; }
+    .overlay-card p    { color: var(--text-dim); margin-bottom: 24px; font-size: .95rem; }
+  </style>
+</head>
+<body>
+
+<nav class="game-nav">
+  <a href="../index.html" class="back-link">← GameKingdom</a>
+  <h1>🔢 Sudoku</h1>
+</nav>
+
+<div id="gameContainer">
+  <div class="controls">
+    <label for="diffSel">Difficulty:</label>
+    <select id="diffSel">
+      <option value="easy">Easy</option>
+      <option value="medium" selected>Medium</option>
+      <option value="hard">Hard</option>
+    </select>
+    <button class="btn" id="newBtn">New Game</button>
+    <button class="btn btn-ghost" id="eraseBtn">Erase</button>
+  </div>
+
+  <div class="status-bar">
+    <div>Errors: <span id="errCnt">0</span></div>
+    <div>Time: <span id="clock">0:00</span></div>
+  </div>
+
+  <div class="sudoku-grid" id="grid" tabindex="0"></div>
+
+  <div class="numpad" id="numpad"></div>
+</div>
+
+<div class="overlay hidden" id="winOverlay">
+  <div class="overlay-card">
+    <div class="big">🎉</div>
+    <h2>Puzzle Solved!</h2>
+    <p id="winDetail">Well done!</p>
+    <button class="btn" id="againBtn">Play Again</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+// ── Puzzles (strings of 81 digits, 0 = blank) ────────────────────────────────
+// Solutions are computed at runtime by the backtracking solver below.
+const PUZZLES = {
+  easy: [
+    // Wikipedia classic
+    '530070000600195000098000060800060003400803001700020006060000280000419005000080079',
+    // Project Euler #96 grid 01
+    '003020600900305001001806400008102900700000008006708200002609500800203009005010300',
+    // Project Euler #96 grid 02
+    '200080300060070084030500209000105408000000000402706000301007040720040060004010003',
+  ],
+  medium: [
+    // Project Euler #96 grid 03
+    '000000907000420180000705026100904000050000040000507009920108000034090800507000000',
+    // Project Euler #96 grid 06
+    '020000000000600300300040800041000700000800020700000030090080050006000008000030400',
+    // Project Euler #96 grid 04
+    '000005060000002390003000100490000002050007030700000015100000400020800000080600000',
+  ],
+  hard: [
+    // Project Euler #96 grid 07 (17 givens)
+    '000060080010000300000009100085000006000040000900000570008100000003000040070020000',
+    // Arto Inkala 2006 "Escargot"
+    '100007090030020008009600500005300900010080002600004003000000280000049005470200000',
+    // Arto Inkala 2010
+    '800000000003600000070090200060005030000030000040100006000801070200000050000070900',
+  ],
+};
+
+// ── Backtracking solver ───────────────────────────────────────────────────────
+function solve(arr) {
+  const a = arr.slice();
+  function valid(pos, num) {
+    const r = (pos / 9) | 0, c = pos % 9;
+    for (let i = 0; i < 9; i++) {
+      if (a[r * 9 + i] === num) return false;
+      if (a[i * 9 + c] === num) return false;
+    }
+    const br = (r / 3 | 0) * 3, bc = (c / 3 | 0) * 3;
+    for (let dr = 0; dr < 3; dr++)
+      for (let dc = 0; dc < 3; dc++)
+        if (a[(br + dr) * 9 + (bc + dc)] === num) return false;
+    return true;
+  }
+  function go() {
+    const pos = a.indexOf(0);
+    if (pos === -1) return true;
+    for (let n = 1; n <= 9; n++) {
+      if (valid(pos, n)) {
+        a[pos] = n;
+        if (go()) return true;
+        a[pos] = 0;
+      }
+    }
+    return false;
+  }
+  return go() ? a : null;
+}
+
+// ── Game state ────────────────────────────────────────────────────────────────
+let board    = new Array(81).fill(0);
+let solution = new Array(81).fill(0);
+let givens   = new Array(81).fill(false);
+let selected = -1;
+let errors   = 0;
+let ticks    = 0;
+let timer    = null;
+let won      = false;
+
+// ── DOM refs ──────────────────────────────────────────────────────────────────
+const gridEl     = document.getElementById('grid');
+const numpadEl   = document.getElementById('numpad');
+const errEl      = document.getElementById('errCnt');
+const clockEl    = document.getElementById('clock');
+const winOverlay = document.getElementById('winOverlay');
+const winDetail  = document.getElementById('winDetail');
+const diffSel    = document.getElementById('diffSel');
+
+// ── Build grid ────────────────────────────────────────────────────────────────
+(function buildGrid() {
+  for (let i = 0; i < 81; i++) {
+    const r = (i / 9) | 0, c = i % 9;
+    const d = document.createElement('div');
+    d.className = 'cell';
+    d.dataset.i = i;
+    d.dataset.r = r;
+    d.dataset.c = c;
+    d.addEventListener('pointerdown', e => { e.preventDefault(); selectCell(i); });
+    gridEl.appendChild(d);
+  }
+})();
+
+// ── Build numpad ──────────────────────────────────────────────────────────────
+(function buildNumpad() {
+  for (let n = 1; n <= 9; n++) {
+    const b = document.createElement('button');
+    b.className = 'num-btn';
+    b.textContent = n;
+    b.dataset.n = n;
+    b.addEventListener('click', () => inputNum(n));
+    numpadEl.appendChild(b);
+  }
+  const e = document.createElement('button');
+  e.className = 'num-btn erase';
+  e.textContent = 'Erase';
+  e.addEventListener('click', () => inputNum(0));
+  numpadEl.appendChild(e);
+})();
+
+// ── New game ──────────────────────────────────────────────────────────────────
+function newGame() {
+  const list = PUZZLES[diffSel.value];
+  const str  = list[Math.floor(Math.random() * list.length)];
+  board    = str.split('').map(Number);
+  solution = solve(board);
+  if (!solution) { alert('Puzzle error — picking another.'); return newGame(); }
+  givens   = board.map(v => v !== 0);
+  selected = -1;
+  errors   = 0;
+  won      = false;
+  errEl.textContent = '0';
+  winOverlay.classList.add('hidden');
+  stopTimer(); ticks = 0; clockEl.textContent = '0:00';
+  startTimer();
+  render();
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
+function render() {
+  const selVal = selected >= 0 ? board[selected] : 0;
+  const cells  = gridEl.children;
+  for (let i = 0; i < 81; i++) {
+    const el  = cells[i];
+    const val = board[i];
+    el.textContent = val || '';
+    el.className   = 'cell';
+    if (givens[i]) {
+      el.classList.add('given');
+    } else if (val > 0) {
+      el.classList.add(val === solution[i] ? 'user' : 'conflict');
+    }
+    if (i === selected) {
+      el.classList.add('selected');
+    } else if (isPeer(i)) {
+      el.classList.add('peer');
+    } else if (selVal > 0 && val === selVal) {
+      el.classList.add('same-num');
+    }
+  }
+  // highlight active numpad key
+  numpadEl.querySelectorAll('.num-btn').forEach(b => {
+    b.classList.toggle('active', Number(b.dataset.n) === selVal);
+  });
+}
+
+function isPeer(i) {
+  if (selected < 0) return false;
+  const sr = (selected / 9) | 0, sc = selected % 9;
+  const ir = (i / 9) | 0,       ic = i % 9;
+  return sr === ir || sc === ic ||
+    ((sr / 3 | 0) === (ir / 3 | 0) && (sc / 3 | 0) === (ic / 3 | 0));
+}
+
+// ── Input ─────────────────────────────────────────────────────────────────────
+function selectCell(i) {
+  if (won) return;
+  selected = i;
+  gridEl.focus();
+  render();
+}
+
+function inputNum(n) {
+  if (selected < 0 || won || givens[selected]) return;
+  const prev = board[selected];
+  board[selected] = n;
+  if (n > 0 && n !== solution[selected]) {
+    errors++;
+    errEl.textContent = errors;
+  }
+  render();
+  checkWin();
+}
+
+// ── Keyboard ──────────────────────────────────────────────────────────────────
+gridEl.addEventListener('keydown', e => {
+  if (won) return;
+  const key = e.key;
+  if (key >= '1' && key <= '9') { e.preventDefault(); inputNum(+key); return; }
+  if (key === 'Backspace' || key === 'Delete' || key === '0') { e.preventDefault(); inputNum(0); return; }
+  if (selected < 0) { selected = 0; render(); return; }
+  const r = (selected / 9) | 0, c = selected % 9;
+  const moves = { ArrowRight: [r, Math.min(c+1,8)], ArrowLeft: [r, Math.max(c-1,0)],
+                  ArrowDown:  [Math.min(r+1,8), c],  ArrowUp:   [Math.max(r-1,0), c] };
+  if (moves[key]) {
+    e.preventDefault();
+    const [nr, nc] = moves[key];
+    selected = nr * 9 + nc;
+    render();
+  }
+});
+
+// ── Win check ─────────────────────────────────────────────────────────────────
+function checkWin() {
+  if (!board.every((v, i) => v === solution[i])) return;
+  won = true;
+  stopTimer();
+  const m = (ticks / 60) | 0, s = ticks % 60;
+  const t = m ? `${m}m ${s}s` : `${s}s`;
+  winDetail.textContent = `Solved in ${t} with ${errors} error${errors !== 1 ? 's' : ''}.`;
+  winOverlay.classList.remove('hidden');
+  const score = Math.max(0, 1000 - errors * 20 - Math.floor(ticks / 10));
+  window.dispatchEvent(new CustomEvent('gameOver', {
+    detail: { game: 'sudoku', score }
+  }));
+}
+
+// ── Timer ─────────────────────────────────────────────────────────────────────
+function startTimer() {
+  timer = setInterval(() => {
+    ticks++;
+    const m = (ticks / 60) | 0, s = ticks % 60;
+    clockEl.textContent = `${m}:${String(s).padStart(2, '0')}`;
+  }, 1000);
+}
+function stopTimer() { clearInterval(timer); timer = null; }
+
+// ── Wiring ────────────────────────────────────────────────────────────────────
+document.getElementById('newBtn').addEventListener('click', newGame);
+document.getElementById('againBtn').addEventListener('click', newGame);
+document.getElementById('eraseBtn').addEventListener('click', () => inputNum(0));
+
+// ── Start ─────────────────────────────────────────────────────────────────────
+newGame();
+</script>
+</body>
+</html>
