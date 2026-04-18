@@ -160,6 +160,15 @@ const GAMES = [
     path: 'games/connect-four.html',
     tags: [],
   },
+  {
+    id: 'chess',
+    title: 'Chess',
+    desc: 'Full chess with castling, en passant, and promotion. Play vs AI or a friend.',
+    category: 'strategy',
+    icon: '♟',
+    path: 'games/chess.html',
+    tags: [],
+  },
 
   // ----- Math -----
   {
