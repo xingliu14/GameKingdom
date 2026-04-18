@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Card Quest — GameKingdom</title>
-  <meta name="description" content="A deck-building card battle RPG. Build your deck, fight 10 enemies, defeat the Dragon Boss!">
+  <meta name="description" content="A Slay-the-Spire style deck-building card battle RPG. Fight 10 enemies, build your deck, and slay the Dragon!" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -17,10 +17,9 @@
       --red: #ef4444;
       --green: #22c55e;
       --blue: #3b82f6;
-      --yellow: #f59e0b;
-      --orange: #f97316;
+      --gold: #f59e0b;
       --purple: #a855f7;
-      --teal: #14b8a6;
+      --orange: #f97316;
     }
     body {
       background: var(--bg);
@@ -33,7 +32,7 @@
     }
     a { color: var(--accent); }
 
-    /* ---- nav ---- */
+    /* NAV */
     .game-nav {
       padding: 12px 16px;
       background: var(--surface);
@@ -47,1425 +46,1134 @@
     .back-link:hover { text-decoration: underline; }
     .game-nav h1 { font-size: 1.1rem; font-weight: 700; }
 
-    /* ---- screens ---- */
+    /* SCREENS */
     .screen { display: none; flex-direction: column; flex: 1; }
     .screen.active { display: flex; }
 
-    /* ======= TITLE SCREEN ======= */
+    /* ===== TITLE SCREEN ===== */
     #titleScreen {
       align-items: center;
       justify-content: center;
-      gap: 24px;
+      gap: 20px;
       padding: 40px 20px;
+      text-align: center;
     }
     .title-hero {
-      font-size: 3rem;
+      font-size: 2.8rem;
       font-weight: 900;
-      background: linear-gradient(135deg, var(--accent), #c084fc, var(--yellow));
+      background: linear-gradient(135deg, var(--accent), #c084fc, var(--gold));
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
-      text-align: center;
     }
-    .title-subtitle {
-      color: var(--text-dim);
-      font-size: 1rem;
-      text-align: center;
-      max-width: 360px;
-    }
-    .title-preview {
+    .title-sub { color: var(--text-dim); font-size: .95rem; max-width: 380px; line-height: 1.6; }
+    .title-cards {
       display: flex;
-      gap: 12px;
+      gap: 10px;
       flex-wrap: wrap;
       justify-content: center;
-      max-width: 500px;
     }
+
+    /* BUTTONS */
     .btn {
-      padding: 12px 28px;
+      padding: 11px 24px;
       border-radius: 8px;
       border: none;
-      font-size: 1rem;
+      font-size: .9rem;
       font-weight: 700;
       cursor: pointer;
       transition: transform .1s, filter .15s;
     }
     .btn:hover { transform: translateY(-1px); filter: brightness(1.15); }
-    .btn:active { transform: translateY(0); filter: brightness(0.95); }
+    .btn:active { transform: translateY(0); filter: brightness(.95); }
     .btn-primary { background: var(--accent); color: #fff; }
     .btn-secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
-    .btn-danger { background: var(--red); color: #fff; }
-    .btn-success { background: var(--green); color: #111; }
 
-    /* ======= BATTLE SCREEN ======= */
-    #battleScreen {
-      flex-direction: column;
-      gap: 0;
-      overflow: hidden;
-    }
+    /* ===== BATTLE SCREEN ===== */
+    #battleScreen { flex-direction: column; gap: 0; overflow: hidden; }
 
-    /* enemy area */
+    /* Enemy area */
     .enemy-area {
-      background: linear-gradient(180deg, #0a0a10 0%, var(--bg) 100%);
-      padding: 16px 20px 12px;
+      background: linear-gradient(180deg, #09090f 0%, var(--bg) 100%);
+      padding: 12px 16px 10px;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
       border-bottom: 1px solid var(--border);
-      min-height: 180px;
     }
-    .fight-label {
-      font-size: .75rem;
-      font-weight: 700;
-      letter-spacing: .1em;
-      color: var(--text-dim);
-      text-transform: uppercase;
-    }
-    .enemy-row {
+    .fight-row {
       display: flex;
+      justify-content: space-between;
       align-items: center;
-      gap: 20px;
+      width: 100%;
+      max-width: 500px;
     }
+    .fight-label { font-size: .72rem; font-weight: 700; letter-spacing: .08em; color: var(--text-dim); text-transform: uppercase; }
+    .progress-bar { display: flex; gap: 3px; }
+    .progress-dot {
+      width: 10px; height: 10px; border-radius: 50%;
+      background: var(--border); border: 1px solid var(--border);
+      transition: background .3s;
+    }
+    .progress-dot.done { background: var(--green); border-color: var(--green); }
+    .progress-dot.current { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 5px var(--accent); }
+    .progress-dot.boss { border-color: var(--red); }
+    .progress-dot.boss.done { background: #7f1d1d; }
+    .progress-dot.boss.current { background: var(--red); box-shadow: 0 0 5px var(--red); }
+
+    .enemy-main-row { display: flex; align-items: center; gap: 16px; }
     .enemy-sprite {
-      font-size: 3.5rem;
-      line-height: 1;
-      filter: drop-shadow(0 0 12px rgba(124,92,252,.4));
+      font-size: 3rem; line-height: 1; flex-shrink: 0;
+      filter: drop-shadow(0 0 10px rgba(124,92,252,.35));
       animation: floatSprite 3s ease-in-out infinite;
     }
-    @keyframes floatSprite {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-6px); }
+    @keyframes floatSprite { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-5px)} }
+    @keyframes shake {
+      0%,100%{transform:translateX(0)} 20%{transform:translateX(-6px)}
+      40%{transform:translateX(6px)} 60%{transform:translateX(-4px)} 80%{transform:translateX(4px)}
     }
-    .enemy-info { display: flex; flex-direction: column; gap: 6px; min-width: 160px; }
-    .enemy-name {
-      font-weight: 700;
-      font-size: 1rem;
+    .shake { animation: shake .3s ease; }
+
+    .enemy-info { display: flex; flex-direction: column; gap: 5px; }
+    .enemy-name-row { display: flex; align-items: center; gap: 6px; }
+    .enemy-name { font-weight: 700; font-size: .95rem; }
+    .boss-badge {
+      background: var(--red); color: #fff; font-size: .6rem;
+      font-weight: 800; padding: 1px 5px; border-radius: 8px;
+      letter-spacing: .05em;
     }
     .hp-bar-wrap {
-      background: #111;
-      border-radius: 4px;
-      height: 10px;
-      overflow: hidden;
-      border: 1px solid var(--border);
-      width: 100%;
+      background: #111; border-radius: 4px; height: 10px;
+      overflow: hidden; border: 1px solid var(--border); min-width: 140px;
     }
-    .hp-bar-fill {
-      height: 100%;
-      border-radius: 4px;
-      transition: width .4s ease;
-      background: linear-gradient(90deg, var(--red), #f97316);
+    .hp-bar-fill { height: 100%; border-radius: 4px; transition: width .4s ease; }
+    .hp-fill-enemy { background: linear-gradient(90deg, var(--red), var(--orange)); }
+    .hp-fill-player { background: linear-gradient(90deg, var(--green), #84cc16); }
+    .hp-text { font-size: .75rem; color: var(--text-dim); }
+    .enemy-statuses { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 2px; }
+    .status-chip {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 1px 6px; font-size: .68rem; font-weight: 600;
     }
-    .hp-bar-fill.player-hp { background: linear-gradient(90deg, var(--green), #84cc16); }
-    .hp-text { font-size: .8rem; color: var(--text-dim); }
-    .intent-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 4px 10px;
-      font-size: .8rem;
-      font-weight: 600;
-    }
-    .intent-icon { font-size: 1rem; }
+    .status-chip.sPoison { border-color: var(--green); color: #86efac; }
+    .status-chip.sBlock { border-color: var(--blue); color: #93c5fd; }
+    .status-chip.sWeak { border-color: #a16207; color: #fde68a; }
+    .status-chip.sEmpower { border-color: var(--purple); color: #d8b4fe; }
+    .status-chip.sRegen { border-color: var(--green); color: #6ee7b7; }
 
-    /* status bar */
-    .status-bar {
-      background: var(--surface);
-      padding: 10px 16px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      flex-wrap: wrap;
-      border-bottom: 1px solid var(--border);
-    }
-    .stat-chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 4px 10px;
-      font-size: .8rem;
-      font-weight: 600;
-    }
-    .stat-chip .stat-icon { font-size: .95rem; }
-    .stat-chip.energy { border-color: var(--yellow); color: var(--yellow); }
-    .stat-chip.block-chip { border-color: var(--blue); color: var(--blue); }
-    .stat-chip.poison-chip { border-color: var(--green); color: var(--green); }
-    .stat-chip.hp-chip { border-color: var(--red); color: var(--red); }
-    .stat-chip.deck-chip { border-color: var(--text-dim); color: var(--text-dim); }
-    .spacer { flex: 1; }
-    .end-turn-btn {
-      padding: 8px 18px;
-      border-radius: 8px;
-      border: none;
-      background: var(--accent);
-      color: #fff;
-      font-size: .85rem;
-      font-weight: 700;
-      cursor: pointer;
-      transition: filter .15s, transform .1s;
+    .intent-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; padding: 4px 10px; font-size: .78rem; font-weight: 600;
       white-space: nowrap;
     }
-    .end-turn-btn:hover { filter: brightness(1.15); }
-    .end-turn-btn:disabled { opacity: .5; cursor: default; filter: none; }
 
-    /* battle log */
+    /* Status / player bar */
+    .player-bar {
+      background: var(--surface); padding: 8px 14px;
+      display: flex; align-items: center; gap: 10px;
+      flex-wrap: wrap; border-bottom: 1px solid var(--border);
+    }
+    .stat-chip {
+      display: inline-flex; align-items: center; gap: 4px;
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 14px; padding: 3px 9px; font-size: .78rem; font-weight: 600;
+    }
+    .stat-chip.energy-chip { border-color: var(--gold); color: var(--gold); }
+    .stat-chip.block-chip2 { border-color: var(--blue); color: #93c5fd; }
+    .stat-chip.poison-chip2 { border-color: var(--green); color: #86efac; }
+    .stat-chip.weak-chip { border-color: #a16207; color: #fde68a; }
+    .stat-chip.empower-chip { border-color: var(--purple); color: #d8b4fe; }
+    .stat-chip.regen-chip { border-color: #14b8a6; color: #5eead4; }
+    .stat-chip.nextfree-chip { border-color: #6ee7b7; color: #6ee7b7; }
+    .stat-chip.hp-chip2 { border-color: var(--red); color: #fca5a5; }
+    .stat-chip.deck-chip { border-color: var(--text-dim); color: var(--text-dim); cursor: pointer; }
+    .stat-chip.deck-chip:hover { border-color: var(--text); color: var(--text); }
+    .spacer { flex: 1; }
+    .end-turn-btn {
+      padding: 7px 18px; border-radius: 8px; border: none;
+      background: var(--accent); color: #fff; font-size: .85rem; font-weight: 700;
+      cursor: pointer; transition: filter .15s, transform .1s; white-space: nowrap;
+    }
+    .end-turn-btn:hover { filter: brightness(1.15); }
+    .end-turn-btn:disabled { opacity: .45; cursor: default; filter: none; transform: none; }
+
+    /* Battle log */
     .battle-log {
-      background: var(--bg);
-      border-bottom: 1px solid var(--border);
-      padding: 6px 14px;
-      min-height: 36px;
-      max-height: 60px;
-      overflow-y: auto;
-      font-size: .78rem;
-      color: var(--text-dim);
-      line-height: 1.5;
+      background: var(--bg); border-bottom: 1px solid var(--border);
+      padding: 5px 14px; max-height: 52px; overflow-y: auto;
+      font-size: .75rem; color: var(--text-dim); line-height: 1.55;
     }
     .battle-log .log-line { display: block; }
-    .battle-log .log-line.damage { color: #fca5a5; }
-    .battle-log .log-line.heal { color: #86efac; }
-    .battle-log .log-line.block { color: #93c5fd; }
-    .battle-log .log-line.card { color: #c4b5fd; }
-    .battle-log .log-line.enemy { color: #fdba74; }
+    .log-damage { color: #fca5a5; }
+    .log-heal { color: #86efac; }
+    .log-block { color: #93c5fd; }
+    .log-card { color: #c4b5fd; }
+    .log-enemy { color: #fdba74; }
+    .log-poison { color: #86efac; }
+    .log-special { color: var(--gold); }
 
-    /* hand area */
+    /* Hand area */
     .hand-area {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      padding: 10px 10px 4px;
-      gap: 8px;
-      background: linear-gradient(0deg, #0c0c12 0%, var(--bg) 100%);
+      flex: 1; display: flex; flex-direction: column;
+      padding: 8px 10px 6px; gap: 6px; overflow: hidden;
+      background: linear-gradient(0deg, #0b0b11 0%, var(--bg) 100%);
     }
-    .hand-label {
-      font-size: .7rem;
-      color: var(--text-dim);
-      text-transform: uppercase;
-      letter-spacing: .08em;
-      padding: 0 4px;
-    }
+    .hand-label { font-size: .7rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: .08em; }
     .hand-cards {
-      display: flex;
-      gap: 8px;
-      overflow-x: auto;
-      padding-bottom: 6px;
-      flex: 1;
-      align-items: flex-end;
-      scroll-snap-type: x mandatory;
+      display: flex; gap: 7px; overflow-x: auto; padding-bottom: 4px;
+      flex: 1; align-items: flex-end; scroll-snap-type: x mandatory;
     }
     .hand-cards::-webkit-scrollbar { height: 4px; }
     .hand-cards::-webkit-scrollbar-track { background: var(--surface); border-radius: 2px; }
     .hand-cards::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
-    /* ======= CARDS ======= */
+    /* CARDS */
     .card {
-      flex-shrink: 0;
-      width: 100px;
-      min-height: 130px;
-      background: var(--surface);
-      border: 1.5px solid var(--border);
-      border-radius: 10px;
-      padding: 8px 7px 6px;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      cursor: pointer;
+      flex-shrink: 0; width: 105px; min-height: 140px;
+      background: var(--surface); border: 1.5px solid var(--border);
+      border-radius: 10px; padding: 7px 6px 6px;
+      display: flex; flex-direction: column; gap: 4px;
+      cursor: pointer; position: relative;
       transition: transform .15s, box-shadow .15s, border-color .15s;
-      position: relative;
-      scroll-snap-align: start;
-      user-select: none;
+      scroll-snap-align: start; user-select: none;
     }
     .card:hover:not(.unaffordable) {
-      transform: translateY(-18px) scale(1.08);
-      box-shadow: 0 12px 30px rgba(0,0,0,.6);
-      border-color: var(--accent);
-      z-index: 10;
+      transform: translateY(-20px) scale(1.08);
+      box-shadow: 0 14px 32px rgba(0,0,0,.65); border-color: var(--accent); z-index: 10;
     }
-    .card.unaffordable { opacity: .45; cursor: not-allowed; }
-    .card.attack { border-color: #7f1d1d; }
-    .card.attack:hover:not(.unaffordable) { border-color: var(--red); box-shadow: 0 12px 30px rgba(239,68,68,.25); }
-    .card.defense { border-color: #1e3a5f; }
-    .card.defense:hover:not(.unaffordable) { border-color: var(--blue); box-shadow: 0 12px 30px rgba(59,130,246,.25); }
-    .card.skill { border-color: #2d4a1e; }
-    .card.skill:hover:not(.unaffordable) { border-color: var(--green); box-shadow: 0 12px 30px rgba(34,197,94,.25); }
-    .card.magic { border-color: #3b1763; }
-    .card.magic:hover:not(.unaffordable) { border-color: var(--purple); box-shadow: 0 12px 30px rgba(168,85,247,.25); }
+    .card.unaffordable { opacity: .4; cursor: not-allowed; }
+    .card.cAttack { border-color: #7f1d1d; background: linear-gradient(160deg, #1c0c0c, var(--surface)); }
+    .card.cAttack:hover:not(.unaffordable) { border-color: var(--red); box-shadow: 0 14px 32px rgba(239,68,68,.22); }
+    .card.cDefense { border-color: #1e3a5f; background: linear-gradient(160deg, #0c1220, var(--surface)); }
+    .card.cDefense:hover:not(.unaffordable) { border-color: var(--blue); box-shadow: 0 14px 32px rgba(59,130,246,.22); }
+    .card.cSkill { border-color: #1a3a1a; background: linear-gradient(160deg, #0c1a0c, var(--surface)); }
+    .card.cSkill:hover:not(.unaffordable) { border-color: var(--green); box-shadow: 0 14px 32px rgba(34,197,94,.22); }
+    .card.cMagic { border-color: #3b1763; background: linear-gradient(160deg, #140c20, var(--surface)); }
+    .card.cMagic:hover:not(.unaffordable) { border-color: var(--purple); box-shadow: 0 14px 32px rgba(168,85,247,.22); }
 
-    .card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-    }
-    .card-name {
-      font-size: .7rem;
-      font-weight: 700;
-      line-height: 1.2;
-      flex: 1;
-    }
+    .card-header { display: flex; justify-content: space-between; align-items: flex-start; }
+    .card-name { font-size: .68rem; font-weight: 700; line-height: 1.2; flex: 1; }
     .card-cost {
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      background: var(--yellow);
-      color: #111;
-      font-size: .7rem;
-      font-weight: 900;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
+      width: 19px; height: 19px; border-radius: 50%; font-size: .68rem;
+      font-weight: 900; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
     }
-    .card-cost.cost-0 { background: #6ee7b7; color: #111; }
-    .card-cost.cost-1 { background: var(--yellow); color: #111; }
-    .card-cost.cost-2 { background: var(--orange); color: #111; }
-    .card-cost.cost-3 { background: var(--red); color: #fff; }
-    .card-icon {
-      font-size: 1.5rem;
-      text-align: center;
-      line-height: 1;
-      padding: 2px 0;
-    }
+    .cost-0 { background: #6ee7b7; color: #111; }
+    .cost-1 { background: var(--gold); color: #111; }
+    .cost-2 { background: var(--orange); color: #111; }
+    .cost-3 { background: var(--red); color: #fff; }
+    .card-icon { font-size: 1.6rem; text-align: center; line-height: 1; padding: 2px 0; }
     .card-type-badge {
-      font-size: .6rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: .06em;
-      padding: 1px 5px;
-      border-radius: 3px;
-      align-self: flex-start;
+      font-size: .58rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .05em; padding: 1px 4px; border-radius: 3px; align-self: flex-start;
     }
-    .card.attack .card-type-badge { background: rgba(239,68,68,.2); color: #fca5a5; }
-    .card.defense .card-type-badge { background: rgba(59,130,246,.2); color: #93c5fd; }
-    .card.skill .card-type-badge { background: rgba(34,197,94,.2); color: #86efac; }
-    .card.magic .card-type-badge { background: rgba(168,85,247,.2); color: #d8b4fe; }
-    .card-desc {
-      font-size: .62rem;
-      color: var(--text-dim);
-      line-height: 1.35;
-      flex: 1;
-    }
+    .cAttack .card-type-badge { background: rgba(239,68,68,.2); color: #fca5a5; }
+    .cDefense .card-type-badge { background: rgba(59,130,246,.2); color: #93c5fd; }
+    .cSkill .card-type-badge { background: rgba(34,197,94,.2); color: #86efac; }
+    .cMagic .card-type-badge { background: rgba(168,85,247,.2); color: #d8b4fe; }
+    .card-desc { font-size: .6rem; color: var(--text-dim); line-height: 1.3; flex: 1; }
 
-    /* reward card (larger) */
-    .card.reward-card {
-      width: 130px;
-      min-height: 170px;
-      cursor: pointer;
-    }
-    .card.reward-card:hover {
-      transform: translateY(-8px) scale(1.05);
-      border-color: var(--accent);
-      box-shadow: 0 12px 30px rgba(124,92,252,.35);
-    }
-    .card.reward-card .card-name { font-size: .8rem; }
-    .card.reward-card .card-icon { font-size: 1.8rem; }
-    .card.reward-card .card-desc { font-size: .7rem; }
+    /* Reward & deck viewer cards */
+    .card.rCard { width: 125px; min-height: 162px; cursor: pointer; }
+    .card.rCard .card-name { font-size: .75rem; }
+    .card.rCard .card-icon { font-size: 2rem; }
+    .card.rCard .card-desc { font-size: .65rem; }
+    .card.rCard:hover { transform: translateY(-10px) scale(1.06); }
+    .card.dCard { width: 88px; min-height: 112px; cursor: default; }
+    .card.dCard:hover { transform: scale(1.04); box-shadow: 0 4px 12px rgba(0,0,0,.4); }
 
-    /* deck viewer card */
-    .card.deck-card {
-      width: 90px;
-      min-height: 115px;
-      cursor: default;
-    }
-    .card.deck-card:hover { transform: scale(1.05); box-shadow: 0 4px 12px rgba(0,0,0,.4); }
-
-    /* ======= REWARD SCREEN ======= */
+    /* ===== REWARD SCREEN ===== */
     #rewardScreen {
-      align-items: center;
-      justify-content: center;
-      gap: 20px;
-      padding: 30px 20px;
+      align-items: center; justify-content: center;
+      gap: 18px; padding: 28px 18px; text-align: center;
     }
-    .reward-title {
-      font-size: 1.4rem;
-      font-weight: 800;
-      color: var(--yellow);
+    .reward-title { font-size: 1.4rem; font-weight: 800; color: var(--gold); }
+    .reward-sub { color: var(--text-dim); font-size: .88rem; }
+    .reward-cards { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
+    .skip-link {
+      font-size: .82rem; color: var(--text-dim); cursor: pointer;
+      background: none; border: none; text-decoration: underline;
     }
-    .reward-subtitle { color: var(--text-dim); font-size: .9rem; }
-    .reward-cards {
-      display: flex;
-      gap: 16px;
-      flex-wrap: wrap;
-      justify-content: center;
-    }
-    .reward-skip {
-      margin-top: 4px;
-      font-size: .85rem;
-      color: var(--text-dim);
-      cursor: pointer;
-      text-decoration: underline;
-      background: none;
-      border: none;
-      color: var(--text-dim);
-    }
-    .reward-skip:hover { color: var(--text); }
+    .skip-link:hover { color: var(--text); }
 
-    /* ======= GAME OVER / WIN SCREENS ======= */
-    #gameOverScreen, #winScreen {
-      align-items: center;
-      justify-content: center;
-      gap: 24px;
-      padding: 40px 20px;
-      text-align: center;
+    /* ===== WIN / GAME OVER ===== */
+    #winScreen, #gameOverScreen {
+      align-items: center; justify-content: center;
+      gap: 20px; padding: 40px 20px; text-align: center;
     }
-    .go-emoji { font-size: 5rem; }
+    .go-emoji { font-size: 4.5rem; }
     .go-title { font-size: 2rem; font-weight: 900; }
-    .go-subtitle { color: var(--text-dim); font-size: 1rem; max-width: 340px; }
-    .go-score {
-      font-size: 1.5rem;
-      font-weight: 800;
-      color: var(--accent);
-    }
-    .score-breakdown { color: var(--text-dim); font-size: .85rem; }
+    .go-sub { color: var(--text-dim); max-width: 340px; line-height: 1.5; }
+    .go-score { font-size: 1.5rem; font-weight: 800; color: var(--accent); }
+    .go-detail { font-size: .82rem; color: var(--text-dim); }
 
-    /* ======= DECK VIEWER ======= */
-    .deck-viewer-overlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,.8);
-      z-index: 100;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
+    /* ===== DECK VIEWER ===== */
+    .deck-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.8); z-index: 200;
+      align-items: center; justify-content: center; padding: 20px;
     }
-    .deck-viewer-overlay.open { display: flex; }
-    .deck-viewer-panel {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 20px;
-      max-width: 600px;
-      width: 100%;
-      max-height: 80vh;
-      overflow-y: auto;
+    .deck-overlay.open { display: flex; }
+    .deck-panel {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 18px; max-width: 580px; width: 100%;
+      max-height: 82vh; overflow-y: auto;
     }
-    .deck-viewer-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 16px;
-    }
-    .deck-viewer-title { font-size: 1.1rem; font-weight: 700; }
-    .deck-viewer-close {
-      background: none;
-      border: none;
-      color: var(--text-dim);
-      font-size: 1.3rem;
-      cursor: pointer;
-      line-height: 1;
-    }
-    .deck-viewer-close:hover { color: var(--text); }
-    .deck-viewer-cards {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
+    .deck-panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+    .deck-panel-title { font-size: 1rem; font-weight: 700; }
+    .deck-close-btn { background: none; border: none; color: var(--text-dim); font-size: 1.2rem; cursor: pointer; line-height: 1; }
+    .deck-close-btn:hover { color: var(--text); }
+    .deck-cards-grid { display: flex; flex-wrap: wrap; gap: 7px; }
 
-    /* ======= ANIMATIONS ======= */
-    @keyframes damageFlash {
-      0%, 100% { filter: none; }
-      50% { filter: brightness(2) saturate(2); }
-    }
-    @keyframes slideInUp {
-      from { transform: translateY(20px); opacity: 0; }
-      to { transform: translateY(0); opacity: 1; }
-    }
-    .anim-in { animation: slideInUp .25s ease; }
-
-    .damage-number {
-      position: fixed;
-      font-size: 1.4rem;
-      font-weight: 900;
-      pointer-events: none;
-      z-index: 200;
-      animation: floatUp .8s ease forwards;
-    }
+    /* Floating damage numbers */
     @keyframes floatUp {
       0% { opacity: 1; transform: translateY(0) scale(1); }
-      100% { opacity: 0; transform: translateY(-60px) scale(1.3); }
+      100% { opacity: 0; transform: translateY(-55px) scale(1.25); }
+    }
+    .damage-number {
+      position: fixed; font-size: 1.35rem; font-weight: 900;
+      pointer-events: none; z-index: 300;
+      animation: floatUp .8s ease forwards;
     }
 
-    /* enemy damage shake */
-    @keyframes shake {
-      0%,100% { transform: translateX(0); }
-      20% { transform: translateX(-6px); }
-      40% { transform: translateX(6px); }
-      60% { transform: translateX(-4px); }
-      80% { transform: translateX(4px); }
+    @media (max-width: 500px) {
+      .card { width: 90px; min-height: 120px; }
+      .card.rCard { width: 105px; min-height: 138px; }
+      .enemy-sprite { font-size: 2.4rem; }
     }
-    .shake { animation: shake .3s ease; }
-
-    /* progress dots */
-    .progress-bar {
-      display: flex;
-      gap: 4px;
-      align-items: center;
-      flex-wrap: wrap;
-    }
-    .progress-dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: var(--border);
-      border: 1px solid var(--border);
-      transition: background .3s;
-    }
-    .progress-dot.done { background: var(--green); border-color: var(--green); }
-    .progress-dot.current { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 6px var(--accent); }
-    .progress-dot.boss { border-color: var(--red); }
-    .progress-dot.boss.current { background: var(--red); box-shadow: 0 0 6px var(--red); }
-    .progress-dot.boss.done { background: var(--red); }
-
-    /* status effects on enemy */
-    .enemy-statuses {
-      display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
-      justify-content: center;
-    }
-    .status-badge {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 2px 7px;
-      font-size: .7rem;
-      font-weight: 600;
-    }
-    .status-badge.poison { border-color: var(--green); color: #86efac; }
-    .status-badge.block { border-color: var(--blue); color: #93c5fd; }
-    .status-badge.empower { border-color: var(--yellow); color: #fde68a; }
-    .status-badge.roar { border-color: var(--red); color: #fca5a5; }
   </style>
 </head>
 <body>
 
-  <nav class="game-nav">
-    <a href="../index.html" class="back-link">← GameKingdom</a>
-    <h1>Card Quest</h1>
-  </nav>
+<nav class="game-nav">
+  <a href="../index.html" class="back-link">← GameKingdom</a>
+  <h1>Card Quest</h1>
+</nav>
 
-  <!-- ===== TITLE SCREEN ===== -->
-  <div id="titleScreen" class="screen active">
-    <div class="title-hero">⚔️ Card Quest</div>
-    <p class="title-subtitle">A deck-building dungeon crawler. Build your deck, fight 10 enemies, and slay the Dragon Boss.</p>
-    <div class="title-preview">
-      <div class="card attack" style="width:110px;min-height:140px;pointer-events:none">
-        <div class="card-header"><span class="card-name">Strike</span><span class="card-cost cost-1">1</span></div>
-        <div class="card-icon">⚔️</div>
-        <span class="card-type-badge">Attack</span>
-        <p class="card-desc">Deal 6 damage.</p>
-      </div>
-      <div class="card defense" style="width:110px;min-height:140px;pointer-events:none">
-        <div class="card-header"><span class="card-name">Defend</span><span class="card-cost cost-1">1</span></div>
-        <div class="card-icon">🛡️</div>
-        <span class="card-type-badge">Defense</span>
-        <p class="card-desc">Gain 5 block.</p>
-      </div>
-      <div class="card magic" style="width:110px;min-height:140px;pointer-events:none">
-        <div class="card-header"><span class="card-name">Fireball</span><span class="card-cost cost-2">2</span></div>
-        <div class="card-icon">🔥</div>
-        <span class="card-type-badge">Magic</span>
-        <p class="card-desc">Deal 18 damage.</p>
-      </div>
+<!-- TITLE SCREEN -->
+<div id="titleScreen" class="screen active">
+  <div class="title-hero">⚔️ Card Quest</div>
+  <p class="title-sub">A deck-building dungeon crawler. Fight 10 increasingly tough enemies, collect powerful reward cards, and slay the Dragon Boss.</p>
+  <div class="title-cards">
+    <div class="card cAttack" style="pointer-events:none;width:110px">
+      <div class="card-header"><span class="card-name">Strike</span><span class="card-cost cost-1">1</span></div>
+      <div class="card-icon">⚔️</div>
+      <span class="card-type-badge">Attack</span>
+      <p class="card-desc">Deal 6 damage.</p>
     </div>
-    <button class="btn btn-primary" id="startBtn" style="font-size:1.1rem;padding:14px 40px;">Start Adventure</button>
-    <p style="font-size:.8rem;color:var(--text-dim)">10 enemies • Choose rewards • Build your deck</p>
+    <div class="card cDefense" style="pointer-events:none;width:110px">
+      <div class="card-header"><span class="card-name">Defend</span><span class="card-cost cost-1">1</span></div>
+      <div class="card-icon">🛡️</div>
+      <span class="card-type-badge">Defense</span>
+      <p class="card-desc">Gain 5 block.</p>
+    </div>
+    <div class="card cMagic" style="pointer-events:none;width:110px">
+      <div class="card-header"><span class="card-name">Fireball</span><span class="card-cost cost-2">2</span></div>
+      <div class="card-icon">🔥</div>
+      <span class="card-type-badge">Magic</span>
+      <p class="card-desc">Deal 20 damage.</p>
+    </div>
   </div>
+  <button class="btn btn-primary" id="startBtn" style="font-size:1rem;padding:13px 38px">Start Adventure</button>
+  <p style="font-size:.78rem;color:var(--text-dim)">3 energy per turn · Draw 5 cards · Boss every 3 enemies</p>
+</div>
 
-  <!-- ===== BATTLE SCREEN ===== -->
-  <div id="battleScreen" class="screen">
-    <!-- Enemy area -->
-    <div class="enemy-area" id="enemyArea">
-      <div style="display:flex;justify-content:space-between;align-items:center;width:100%;max-width:440px">
-        <span class="fight-label" id="fightLabel">Fight 1 / 10</span>
-        <div class="progress-bar" id="progressBar"></div>
-      </div>
-      <div class="enemy-row">
-        <div class="enemy-sprite" id="enemySprite">👾</div>
-        <div class="enemy-info">
+<!-- BATTLE SCREEN -->
+<div id="battleScreen" class="screen">
+  <div class="enemy-area">
+    <div class="fight-row">
+      <span class="fight-label" id="fightLabel">Fight 1 / 10</span>
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+    <div class="enemy-main-row">
+      <div class="enemy-sprite" id="enemySprite">👾</div>
+      <div class="enemy-info">
+        <div class="enemy-name-row">
           <span class="enemy-name" id="enemyName">Enemy</span>
-          <div class="hp-bar-wrap"><div class="hp-bar-fill" id="enemyHpBar" style="width:100%"></div></div>
-          <span class="hp-text" id="enemyHpText">100 / 100 HP</span>
-          <div class="enemy-statuses" id="enemyStatuses"></div>
+          <span class="boss-badge" id="bossBadge" style="display:none">BOSS</span>
         </div>
-        <div class="intent-badge" id="intentBadge">
-          <span class="intent-icon">❓</span>
-          <span id="intentText">...</span>
-        </div>
+        <div class="hp-bar-wrap" style="min-width:180px"><div class="hp-bar-fill hp-fill-enemy" id="enemyHpBar" style="width:100%"></div></div>
+        <span class="hp-text" id="enemyHpText">100 / 100 HP</span>
+        <div class="enemy-statuses" id="enemyStatuses"></div>
       </div>
-    </div>
-
-    <!-- Status bar -->
-    <div class="status-bar">
-      <div class="stat-chip hp-chip">
-        <span class="stat-icon">❤️</span>
-        <span id="playerHpText">80/80</span>
+      <div class="intent-badge" id="intentBadge">
+        <span id="intentIcon">❓</span>
+        <span id="intentText">...</span>
       </div>
-      <div class="hp-bar-wrap" style="width:90px;flex-shrink:0">
-        <div class="hp-bar-fill player-hp" id="playerHpBar" style="width:100%"></div>
-      </div>
-      <div class="stat-chip block-chip" id="blockChip" style="display:none">
-        <span class="stat-icon">🛡️</span>
-        <span id="blockText">0</span>
-      </div>
-      <div class="stat-chip poison-chip" id="playerPoisonChip" style="display:none">
-        <span class="stat-icon">☠️</span>
-        <span id="playerPoisonText">0</span>
-      </div>
-      <div class="stat-chip energy">
-        <span class="stat-icon">⚡</span>
-        <span id="energyText">3/3</span>
-      </div>
-      <div class="spacer"></div>
-      <div class="stat-chip deck-chip" id="deckInfo" style="cursor:pointer" title="View deck">
-        <span class="stat-icon">🃏</span>
-        <span id="deckText">10</span>
-      </div>
-      <button class="end-turn-btn" id="endTurnBtn">End Turn</button>
-    </div>
-
-    <!-- Battle log -->
-    <div class="battle-log" id="battleLog">
-      <span class="log-line">The battle begins!</span>
-    </div>
-
-    <!-- Hand -->
-    <div class="hand-area">
-      <span class="hand-label" id="handLabel">Your Hand</span>
-      <div class="hand-cards" id="handCards"></div>
     </div>
   </div>
 
-  <!-- ===== REWARD SCREEN ===== -->
-  <div id="rewardScreen" class="screen">
-    <div class="reward-title">⭐ Victory!</div>
-    <p id="rewardFightLabel" class="reward-subtitle">Choose a card to add to your deck</p>
-    <div class="reward-cards" id="rewardCards"></div>
-    <button class="reward-skip" id="skipRewardBtn">Skip — I don't want any</button>
-  </div>
-
-  <!-- ===== WIN SCREEN ===== -->
-  <div id="winScreen" class="screen">
-    <div class="go-emoji">👑</div>
-    <div class="go-title" style="color:var(--yellow)">You Win!</div>
-    <p class="go-subtitle">You defeated all 10 enemies and slew the Dragon Boss. Your legend is complete.</p>
-    <div class="go-score" id="winScore">Score: 0</div>
-    <p class="score-breakdown" id="winBreakdown"></p>
-    <button class="btn btn-primary" id="winRestartBtn">Play Again</button>
-  </div>
-
-  <!-- ===== GAME OVER SCREEN ===== -->
-  <div id="gameOverScreen" class="screen">
-    <div class="go-emoji">💀</div>
-    <div class="go-title" style="color:var(--red)">Defeated!</div>
-    <p class="go-subtitle" id="gameOverMsg">Your hero fell in battle.</p>
-    <div class="go-score" id="gameOverScore">Score: 0</div>
-    <p class="score-breakdown" id="gameOverBreakdown"></p>
-    <button class="btn btn-primary" id="goRestartBtn">Try Again</button>
-  </div>
-
-  <!-- Deck viewer overlay -->
-  <div class="deck-viewer-overlay" id="deckViewerOverlay">
-    <div class="deck-viewer-panel">
-      <div class="deck-viewer-header">
-        <span class="deck-viewer-title">Your Deck (<span id="deckViewerCount">0</span> cards)</span>
-        <button class="deck-viewer-close" id="deckViewerClose">✕</button>
-      </div>
-      <div class="deck-viewer-cards" id="deckViewerCards"></div>
+  <div class="player-bar">
+    <div class="stat-chip hp-chip2">
+      <span>❤️</span>
+      <span id="playerHpText">80/80</span>
     </div>
+    <div class="hp-bar-wrap" style="width:80px;flex-shrink:0">
+      <div class="hp-bar-fill hp-fill-player" id="playerHpBar" style="width:100%"></div>
+    </div>
+    <div id="playerStatuses" style="display:flex;gap:4px;flex-wrap:wrap"></div>
+    <div class="stat-chip energy-chip">
+      <span>⚡</span>
+      <span id="energyText">3/3</span>
+    </div>
+    <div class="spacer"></div>
+    <div class="stat-chip deck-chip" id="deckChip" title="View your deck">
+      <span>🃏</span>
+      <span id="deckText">12/12</span>
+    </div>
+    <button class="end-turn-btn" id="endTurnBtn">End Turn</button>
   </div>
 
-  <script>
-    'use strict';
+  <div class="battle-log" id="battleLog"></div>
 
-    /* =====================================================
-       CARD DEFINITIONS
-    ===================================================== */
-    const CARD_DEFS = {
-      // Starter
-      strike:       { id:'strike',       name:'Strike',       type:'attack',  cost:1, icon:'⚔️',  desc:'Deal 6 damage.' },
-      defend:       { id:'defend',       name:'Defend',       type:'defense', cost:1, icon:'🛡️',  desc:'Gain 5 block.' },
-      skill:        { id:'skill',        name:'Skill',        type:'skill',   cost:1, icon:'📖',  desc:'Draw 2 cards.' },
-      powerStrike:  { id:'powerStrike',  name:'Power Strike', type:'attack',  cost:2, icon:'💥',  desc:'Deal 15 damage.' },
-      // Attack rewards
-      heavyStrike:  { id:'heavyStrike',  name:'Heavy Strike', type:'attack',  cost:2, icon:'🪓',  desc:'Deal 12 damage.' },
-      twinStrike:   { id:'twinStrike',   name:'Twin Strike',  type:'attack',  cost:1, icon:'⚡',  desc:'Deal 5 damage twice.' },
-      whirlwind:    { id:'whirlwind',    name:'Whirlwind',    type:'attack',  cost:2, icon:'🌀',  desc:'Deal 4 damage (hits all enemies this floor).' },
-      poisonBlade:  { id:'poisonBlade',  name:'Poison Blade', type:'attack',  cost:1, icon:'🗡️',  desc:'Deal 6 damage + apply 3 poison.' },
-      execute:      { id:'execute',      name:'Execute',      type:'attack',  cost:2, icon:'🔪',  desc:'If enemy is below 25% HP, deal 40 damage. Otherwise deal 8.' },
-      // Defense rewards
-      ironShield:   { id:'ironShield',   name:'Iron Shield',  type:'defense', cost:2, icon:'🔰',  desc:'Gain 12 block.' },
-      barrier:      { id:'barrier',      name:'Barrier',      type:'defense', cost:1, icon:'✨',  desc:'Gain 8 block + draw 1 card.' },
-      deflect:      { id:'deflect',      name:'Deflect',      type:'defense', cost:1, icon:'↩️',  desc:'Gain 6 block. If you had block last turn, deal 6 damage.' },
-      // Skill rewards
-      draw3:        { id:'draw3',        name:'Draw 3',       type:'skill',   cost:1, icon:'🃏',  desc:'Draw 3 cards.' },
-      energyBurst:  { id:'energyBurst',  name:'Energy Burst', type:'skill',   cost:0, icon:'⚡',  desc:'Gain 2 energy.' },
-      duplicate:    { id:'duplicate',    name:'Duplicate',    type:'skill',   cost:1, icon:'📋',  desc:'Copy the top card of your discard pile to hand.' },
-      meditation:   { id:'meditation',   name:'Meditation',   type:'skill',   cost:0, icon:'🧘',  desc:'Your next card costs 1 less energy.' },
-      // Magic rewards
-      fireball:     { id:'fireball',     name:'Fireball',     type:'magic',   cost:2, icon:'🔥',  desc:'Deal 18 damage.' },
-      lightning:    { id:'lightning',    name:'Lightning',    type:'magic',   cost:3, icon:'🌩️',  desc:'Deal 12 damage (pierces block).' },
-      heal:         { id:'heal',         name:'Heal',         type:'magic',   cost:1, icon:'💚',  desc:'Restore 12 HP.' },
-      empower:      { id:'empower',      name:'Empower',      type:'magic',   cost:1, icon:'💫',  desc:'Your next attack deals double damage.' },
-    };
+  <div class="hand-area">
+    <span class="hand-label" id="handLabel">Hand — 3 energy</span>
+    <div class="hand-cards" id="handCards"></div>
+  </div>
+</div>
 
-    const REWARD_POOL = [
-      'heavyStrike','twinStrike','whirlwind','poisonBlade','execute',
-      'ironShield','barrier','deflect',
-      'draw3','energyBurst','duplicate','meditation',
-      'fireball','lightning','heal','empower',
-    ];
+<!-- REWARD SCREEN -->
+<div id="rewardScreen" class="screen">
+  <div class="reward-title">⭐ Victory!</div>
+  <p id="rewardFightLabel" class="reward-sub">Choose a card to add to your deck:</p>
+  <div class="reward-cards" id="rewardCards"></div>
+  <button class="skip-link" id="skipRewardBtn">Skip — no thanks</button>
+</div>
 
-    /* =====================================================
-       ENEMY DEFINITIONS
-    ===================================================== */
-    const ENEMY_DEFS = [
-      {
-        id:'slime', name:'Slime', icon:'🟢', hp:40,
-        intents: [
-          { type:'attack', value:8, label:'⚔️ Attack 8' },
-          { type:'attack', value:8, label:'⚔️ Attack 8' },
-        ],
-      },
-      {
-        id:'bandit', name:'Bandit', icon:'🥷', hp:60,
-        intents: [
-          { type:'attack', value:12, label:'⚔️ Attack 12' },
-          { type:'block',  value:8,  label:'🛡️ Block +8' },
-        ],
-      },
-      {
-        id:'troll', name:'Troll', icon:'👹', hp:80,
-        intents: [
-          { type:'attack',  value:15, label:'⚔️ Attack 15' },
-          { type:'regen',   value:5,  label:'💚 Regen 5' },
-        ],
-        regen: 5,
-      },
-      {
-        id:'witch', name:'Witch', icon:'🧙', hp:65,
-        intents: [
-          { type:'attack', value:18, label:'🔥 Spell 18' },
-          { type:'poison', value:5,  label:'☠️ Poison 5' },
-          { type:'buff',   value:0,  label:'🃏 Draw 2' },
-        ],
-      },
-      {
-        id:'knight', name:'Knight', icon:'⚔️', hp:100,
-        intents: [
-          { type:'block',  value:15, label:'🛡️ Block +15' },
-          { type:'attack', value:20, label:'⚔️ Attack 20' },
-        ],
-      },
-      {
-        id:'dragon', name:'Dragon Boss', icon:'🐉', hp:200,
-        boss: true,
-        intents: [
-          { type:'aoe',    value:25, label:'🔥 Breathe Fire 25' },
-          { type:'attack', value:30, label:'🐾 Claw 30' },
-          { type:'roar',   value:0,  label:'😤 Roar — next attack ×2' },
-        ],
-      },
-    ];
+<!-- WIN SCREEN -->
+<div id="winScreen" class="screen">
+  <div class="go-emoji">👑</div>
+  <div class="go-title" style="color:var(--gold)">You Win!</div>
+  <p class="go-sub">All 10 enemies defeated! You have slain the Dragon and saved the kingdom.</p>
+  <div class="go-score" id="winScore">Score: 0</div>
+  <p class="go-detail" id="winDetail"></p>
+  <button class="btn btn-primary" id="winRestartBtn">Play Again</button>
+</div>
 
-    // 10-fight sequence (indices into ENEMY_DEFS)
-    const FIGHT_SEQUENCE = [0, 1, 0, 2, 5, 1, 2, 3, 4, 5];
-    // Boss fights at positions 3 (fight 4), 6 (fight 7), 9 (fight 10) — dragon repeated
+<!-- GAME OVER SCREEN -->
+<div id="gameOverScreen" class="screen">
+  <div class="go-emoji">💀</div>
+  <div class="go-title" style="color:var(--red)">Defeated!</div>
+  <p class="go-sub" id="gameOverMsg">Your hero has fallen.</p>
+  <div class="go-score" id="gameOverScore">Score: 0</div>
+  <p class="go-detail" id="gameOverDetail"></p>
+  <button class="btn btn-primary" id="goRestartBtn">Try Again</button>
+</div>
 
-    /* =====================================================
-       GAME STATE
-    ===================================================== */
-    let gs = {};
+<!-- DECK VIEWER -->
+<div class="deck-overlay" id="deckOverlay">
+  <div class="deck-panel">
+    <div class="deck-panel-header">
+      <span class="deck-panel-title">Your Deck (<span id="deckViewerCount">0</span> cards)</span>
+      <button class="deck-close-btn" id="deckCloseBtn">✕</button>
+    </div>
+    <div class="deck-cards-grid" id="deckViewerCards"></div>
+  </div>
+</div>
 
-    function freshGameState() {
-      return {
-        phase: 'title',         // title | battle | reward | win | gameover
-        fightIndex: 0,          // 0-9
-        playerHp: 80,
-        playerHpMax: 80,
-        playerBlock: 0,
-        playerBlockedLastTurn: false,
-        playerPoison: 0,
-        playerEmpower: false,   // next attack does double
-        playerCostReduction: 0, // meditation
-        energy: 3,
-        energyMax: 3,
-        deck: buildStarterDeck(),
-        hand: [],
-        discard: [],
-        enemy: null,
-        enemyIntentIndex: 0,
-        turn: 0,
-        enemiesDefeated: 0,
-        animating: false,
-      };
+<script>
+'use strict';
+
+/* =====================================================
+   CARD DEFINITIONS
+===================================================== */
+// type: 'attack' | 'defense' | 'skill' | 'magic'
+// effect(gs, card) — modifies game state
+const CARD_DEFS = [
+  // ---- Starter ----
+  { id:'strike',       name:'Strike',        type:'attack',  cost:1, icon:'⚔️',  desc:'Deal 6 damage.',
+    effect(g){g.damageEnemy(6);} },
+  { id:'defend',       name:'Defend',        type:'defense', cost:1, icon:'🛡️',  desc:'Gain 5 block.',
+    effect(g){g.gainBlock(5);} },
+  { id:'quickStrike',  name:'Quick Strike',  type:'attack',  cost:1, icon:'🗡️',  desc:'Deal 4 damage, draw 1 card.',
+    effect(g){g.damageEnemy(4); g.drawCards(1);} },
+  { id:'powerStrike',  name:'Power Strike',  type:'attack',  cost:2, icon:'💥',  desc:'Deal 18 damage.',
+    effect(g){g.damageEnemy(18);} },
+  { id:'ironShell',    name:'Iron Shell',    type:'defense', cost:2, icon:'🐢',  desc:'Gain 10 block.',
+    effect(g){g.gainBlock(10);} },
+
+  // ---- Attack rewards ----
+  { id:'heavyStrike',   name:'Heavy Strike',   type:'attack',  cost:2, icon:'🪓',  desc:'Deal 12 damage.',
+    effect(g){g.damageEnemy(12);} },
+  { id:'twinStrike',    name:'Twin Strike',    type:'attack',  cost:1, icon:'⚡',  desc:'Deal 5 damage twice.',
+    effect(g){g.damageEnemy(5); g.damageEnemy(5);} },
+  { id:'whirlwind',     name:'Whirlwind',      type:'attack',  cost:2, icon:'🌀',  desc:'Deal 4 damage.',
+    effect(g){g.damageEnemy(4);} },
+  { id:'poisonBlade',   name:'Poison Blade',   type:'attack',  cost:1, icon:'🗡️',  desc:'6 damage + 3 poison.',
+    effect(g){g.damageEnemy(6); g.applyEnemyPoison(3);} },
+  { id:'execute',       name:'Execute',        type:'attack',  cost:2, icon:'🔪',  desc:'If enemy HP < 25%, deal 50 dmg. Otherwise 8.',
+    effect(g){g.damageEnemy(g.enemy.hp < g.enemy.hpMax*0.25 ? 50 : 8);} },
+  { id:'critStrike',    name:'Critical Strike', type:'attack', cost:1, icon:'💢',  desc:'8 damage. If it kills, gain 1 energy.',
+    effect(g){const before=g.enemy.hp; g.damageEnemy(8); if(g.enemy.hp<=0&&before>0){g.energy=Math.min(3,g.energy+1);g.log('Critical! +1 energy.','card');}} },
+  { id:'sliceDice',     name:'Slice and Dice', type:'attack',  cost:2, icon:'🔱',  desc:'10 damage twice if you have 5+ block.',
+    effect(g){if(g.playerBlock>=5){g.damageEnemy(10);g.damageEnemy(10);}else g.damageEnemy(10);} },
+  { id:'rampage',       name:'Rampage',        type:'attack',  cost:1, icon:'🔥',  desc:'Deal 6 dmg (+2 permanently each play).',
+    effect(g,c){const dmg=6+(c._bonus||0); g.damageEnemy(dmg); c._bonus=(c._bonus||0)+2; c.desc=`Deal ${dmg+2} dmg (+2 permanently each play).`;} },
+
+  // ---- Defense rewards ----
+  { id:'ironShield',    name:'Iron Shield',    type:'defense', cost:2, icon:'🔰',  desc:'Gain 12 block.',
+    effect(g){g.gainBlock(12);} },
+  { id:'barrier',       name:'Barrier',        type:'defense', cost:1, icon:'✨',  desc:'Gain 8 block + draw 1.',
+    effect(g){g.gainBlock(8); g.drawCards(1);} },
+  { id:'deflect',       name:'Deflect',        type:'defense', cost:1, icon:'↩️',  desc:'5 block. If 5+ block, deal 6 dmg.',
+    effect(g){g.gainBlock(5); if(g.playerBlock>=5){g.damageEnemy(6);g.log('Deflect counter: 6 dmg!','damage');}} },
+  { id:'fortress',      name:'Fortress',       type:'defense', cost:2, icon:'🏰',  desc:'Gain 15 block.',
+    effect(g){g.gainBlock(15);} },
+  { id:'regenerate',    name:'Regenerate',     type:'defense', cost:2, icon:'♻️',  desc:'Gain +4 block at turn start (this combat).',
+    effect(g){g.regenBlock+=4; g.log(`Regenerate: +${g.regenBlock} block each turn now.`,'block');} },
+
+  // ---- Skill rewards ----
+  { id:'draw3',         name:'Draw 3',         type:'skill',   cost:1, icon:'🃏',  desc:'Draw 3 cards.',
+    effect(g){g.drawCards(3);} },
+  { id:'energyBurst',   name:'Energy Burst',   type:'skill',   cost:0, icon:'⚡',  desc:'Gain 2 energy.',
+    effect(g){g.energy=Math.min(3,g.energy+2); g.log('+2 energy.','card');} },
+  { id:'duplicate',     name:'Duplicate',      type:'skill',   cost:2, icon:'📋',  desc:'Play top discard card for free.',
+    effect(g){if(g.discard.length){const c=g.discard[g.discard.length-1]; g.log(`Duplicating ${c.name}...`,'card'); resolveCard(c,g,true);}else g.log('Discard empty.','card');} },
+  { id:'meditation',    name:'Meditation',     type:'skill',   cost:0, icon:'🧘',  desc:'Next card costs 0.',
+    effect(g){g.nextFree=true; g.log('Next card is free!','card');} },
+  { id:'adrenaline',    name:'Adrenaline',     type:'skill',   cost:0, icon:'💨',  desc:'Draw 2 + gain 1 energy.',
+    effect(g){g.drawCards(2); g.energy=Math.min(3,g.energy+1); g.log('+1 energy.','card');} },
+
+  // ---- Magic rewards ----
+  { id:'fireball',      name:'Fireball',       type:'magic',   cost:2, icon:'🔥',  desc:'Deal 20 damage.',
+    effect(g){g.damageEnemy(20);} },
+  { id:'lightning',     name:'Lightning',      type:'magic',   cost:1, icon:'🌩️',  desc:'15 dmg; take 3 self.',
+    effect(g){g.damageEnemy(15); g.damagePlayer(3,true);} },
+  { id:'heal',          name:'Heal',           type:'magic',   cost:2, icon:'💚',  desc:'Restore 15 HP.',
+    effect(g){const h=Math.min(15,g.playerHpMax-g.playerHp); g.playerHp+=h; g.log(`Healed ${h} HP.`,'heal'); spawnNum(playerPos(),`+${h}`,'#86efac'); g.refreshUI();} },
+  { id:'empower',       name:'Empower',        type:'magic',   cost:1, icon:'💫',  desc:'Next attack deals 2× damage.',
+    effect(g){g.playerEmpower=true; g.log('Empowered! Next attack deals double.','card');} },
+  { id:'darkPact',      name:'Dark Pact',      type:'magic',   cost:0, icon:'🖤',  desc:'Lose 5 HP, draw 3 cards.',
+    effect(g){g.damagePlayer(5,true); g.drawCards(3);} },
+];
+
+// Starter deck card IDs and counts
+const STARTER_DECK_COUNTS = {
+  strike: 4, defend: 3, quickStrike: 3, powerStrike: 1, ironShell: 1
+};
+
+// Reward pool — card IDs (exclude starters)
+const REWARD_POOL_IDS = [
+  'heavyStrike','twinStrike','whirlwind','poisonBlade','execute','critStrike','sliceDice','rampage',
+  'ironShield','barrier','deflect','fortress','regenerate',
+  'draw3','energyBurst','duplicate','meditation','adrenaline',
+  'fireball','lightning','heal','empower','darkPact',
+];
+
+/* =====================================================
+   ENEMY DEFINITIONS (exactly 10)
+===================================================== */
+const ENEMY_SEQUENCE = [
+  // 1
+  {name:'Slime',       icon:'🟢', hp:40,  isBoss:false,
+    intents(e){ return [{icon:'⚔️',text:'Attack 8'}]; },
+    onTurn(g,e,intent){ g.enemyAttack(8); }
+  },
+  // 2
+  {name:'Bandit',      icon:'🗡️', hp:60,  isBoss:false,
+    intents(e){ return [{icon:'⚔️',text:'Attack 12'},{icon:'🛡️',text:'Gain 8 block'}]; },
+    onTurn(g,e,intent){
+      if(intent===0) g.enemyAttack(12);
+      else { e.block=(e.block||0)+8; g.log(`${e.name} gains 8 block!`,'enemy'); g.refreshUI(); }
     }
-
-    function buildStarterDeck() {
-      const d = [];
-      for (let i = 0; i < 4; i++) d.push(clone(CARD_DEFS.strike));
-      for (let i = 0; i < 3; i++) d.push(clone(CARD_DEFS.defend));
-      for (let i = 0; i < 2; i++) d.push(clone(CARD_DEFS.skill));
-      d.push(clone(CARD_DEFS.powerStrike));
-      shuffle(d);
-      return d;
+  },
+  // 3
+  {name:'Troll',       icon:'👹', hp:85,  isBoss:false,
+    intents(e){ return [{icon:'⚔️',text:'Attack 15 + Regen 5'}]; },
+    onTurn(g,e,intent){
+      g.enemyAttack(15);
+      if(e.hp>0){ const h=Math.min(5,e.hpMax-e.hp); e.hp+=h; g.log(`Troll regenerates ${h} HP!`,'heal'); g.refreshUI(); }
     }
-
-    function clone(obj) { return JSON.parse(JSON.stringify(obj)); }
-    function shuffle(arr) {
-      for (let i = arr.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [arr[i], arr[j]] = [arr[j], arr[i]];
-      }
-      return arr;
+  },
+  // 4 BOSS
+  {name:'Dark Knight', icon:'⚫', hp:120, isBoss:true,
+    intents(e){ return [{icon:'⚔️',text:'Attack 20'},{icon:'🛡️',text:'Gain 15 block'},{icon:'💀',text:'Heavy Strike 30'}]; },
+    onTurn(g,e,intent){
+      if(intent===0) g.enemyAttack(20);
+      else if(intent===1){ e.block=(e.block||0)+15; g.log(`Dark Knight fortifies! +15 block`,'enemy'); g.refreshUI(); }
+      else g.enemyAttack(30);
     }
-    function rand(a, b) { return Math.floor(Math.random() * (b - a + 1)) + a; }
-
-    /* =====================================================
-       DOM REFS
-    ===================================================== */
-    const screens = {
-      title:    document.getElementById('titleScreen'),
-      battle:   document.getElementById('battleScreen'),
-      reward:   document.getElementById('rewardScreen'),
-      win:      document.getElementById('winScreen'),
-      gameover: document.getElementById('gameOverScreen'),
-    };
-
-    function showScreen(name) {
-      Object.values(screens).forEach(s => s.classList.remove('active'));
-      screens[name].classList.add('active');
-      gs.phase = name;
+  },
+  // 5
+  {name:'Witch',       icon:'🧙', hp:70,  isBoss:false,
+    intents(e){ return [{icon:'☠️',text:'Attack 12 + 3 poison'}]; },
+    onTurn(g,e,intent){
+      g.enemyAttack(12);
+      g.playerPoison=(g.playerPoison||0)+3;
+      g.log(`Witch poisons you for 3!`,'poison'); g.refreshUI();
     }
+  },
+  // 6 BOSS
+  {name:'Golem',       icon:'🗿', hp:110, isBoss:true,
+    intents(e){ return [{icon:'⚔️',text:'Attack 18'},{icon:'🛡️',text:'Gain 10 block'}]; },
+    onTurn(g,e,intent){
+      if(intent===0) g.enemyAttack(18);
+      else { e.block=(e.block||0)+10; g.log(`Golem hardens! +10 block`,'enemy'); g.refreshUI(); }
+    }
+  },
+  // 7 BOSS
+  {name:'Vampire Lord', icon:'🧛', hp:150, isBoss:true,
+    intents(e){ return [{icon:'🩸',text:'Attack 25 + heal 10'}]; },
+    onTurn(g,e,intent){
+      g.enemyAttack(25);
+      if(e.hp>0){ const h=Math.min(10,e.hpMax-e.hp); e.hp+=h; g.log(`Vampire Lord heals ${h} HP!`,'heal'); g.refreshUI(); }
+    }
+  },
+  // 8
+  {name:'Fire Drake',  icon:'🐲', hp:100, isBoss:false,
+    intents(e){ return e._t%3===2?[{icon:'🔥',text:'Breathe Fire! 35 dmg'}]:[{icon:'⚔️',text:'Claw attack 20'}]; },
+    onTurn(g,e,intent){ g.enemyAttack(e._t%3===2?35:20); }
+  },
+  // 9
+  {name:'Shadow Mage', icon:'🌑', hp:80,  isBoss:false,
+    intents(e){ return [{icon:'🌑',text:'Attack 22 + shadow curse (8 dmg on your turn)'}]; },
+    onTurn(g,e,intent){ g.enemyAttack(22); },
+    onPlayerTurn(g,e){
+      if(e.hp>0){ g.log(`Shadow Mage curses you for 8!`,'damage'); g.damagePlayer(8,false); }
+    }
+  },
+  // 10 BOSS
+  {name:'Dragon',      icon:'🐉', hp:250, isBoss:true,
+    intents(e){
+      const p=e._t%4;
+      return [[{icon:'🔥',text:'Breathe Fire! 30 dmg'}],
+              [{icon:'🐾',text:'Claw attack 20'}],
+              [{icon:'💪',text:'ROAR — empower self'}],
+              [{icon:'🌪️',text:'Tail Sweep 15 + weaken 2 turns'}]][p];
+    },
+    onTurn(g,e,intent){
+      const p=e._t%4;
+      if(p===0) g.enemyAttack(30);
+      else if(p===1) g.enemyAttack(20);
+      else if(p===2){ e.empower=true; g.log('Dragon ROARS! Next attack deals 2× damage!','enemy'); g.refreshUI(); }
+      else { g.enemyAttack(15); g.playerWeak=(g.playerWeak||0)+2; g.log('Tail Sweep weakens you for 2 turns!','damage'); g.refreshUI(); }
+    }
+  },
+];
 
-    /* =====================================================
-       BATTLE LOG
-    ===================================================== */
-    const battleLogEl = document.getElementById('battleLog');
-    const MAX_LOG = 6;
+/* =====================================================
+   GAME STATE
+===================================================== */
+let gs = null;
 
-    function log(text, cls='') {
+function newGameState() {
+  return {
+    phase: 'battle',
+    fightIndex: 0,
+    playerHp: 80,
+    playerHpMax: 80,
+    playerBlock: 0,
+    playerPoison: 0,
+    playerWeak: 0,
+    playerEmpower: false,
+    nextFree: false,
+    regenBlock: 0,
+    energy: 3,
+    deck: [],
+    hand: [],
+    discard: [],
+    enemy: null,
+    _intentIdx: 0,
+    _turn: 0,
+    enemiesDefeated: 0,
+    busy: false,
+
+    log(msg, cls='') {
       const span = document.createElement('span');
-      span.className = 'log-line' + (cls ? ' '+cls : '');
-      span.textContent = text;
-      battleLogEl.appendChild(span);
-      // trim old entries
-      while (battleLogEl.children.length > MAX_LOG) {
-        battleLogEl.removeChild(battleLogEl.firstChild);
-      }
-      battleLogEl.scrollTop = battleLogEl.scrollHeight;
-    }
+      span.className = 'log-line log-' + cls;
+      span.textContent = msg;
+      const el = document.getElementById('battleLog');
+      el.appendChild(span);
+      while (el.children.length > 8) el.removeChild(el.firstChild);
+      el.scrollTop = el.scrollHeight;
+    },
 
-    /* =====================================================
-       PROGRESS BAR
-    ===================================================== */
-    function renderProgress() {
-      const pb = document.getElementById('progressBar');
-      pb.innerHTML = '';
-      for (let i = 0; i < 10; i++) {
-        const dot = document.createElement('div');
-        const enemyDef = ENEMY_DEFS[FIGHT_SEQUENCE[i]];
-        dot.className = 'progress-dot' + (enemyDef.boss ? ' boss' : '');
-        if (i < gs.fightIndex) dot.classList.add('done');
-        else if (i === gs.fightIndex) dot.classList.add('current');
-        dot.title = `Fight ${i+1}: ${enemyDef.name}`;
-        pb.appendChild(dot);
-      }
-    }
+    gainBlock(n) {
+      this.playerBlock += n;
+      this.log(`Gained ${n} block.`, 'block');
+      this.refreshUI();
+    },
 
-    /* =====================================================
-       FIGHT SETUP
-    ===================================================== */
-    function startFight(fightIdx) {
-      gs.fightIndex = fightIdx;
-      const def = ENEMY_DEFS[FIGHT_SEQUENCE[fightIdx]];
-      gs.enemy = {
-        ...clone(def),
-        hpMax: def.hp,
-        block: 0,
-        poison: 0,
-        roarActive: false,
-      };
-      gs.enemyIntentIndex = 0;
-      gs.turn = 0;
-      gs.playerBlock = 0;
-      gs.playerBlockedLastTurn = false;
-      gs.playerEmpower = false;
-      gs.playerCostReduction = 0;
-      gs.playerPoison = 0;
-      // Shuffle all cards back together for new fight
-      gs.discard = gs.discard.concat(gs.hand);
-      gs.hand = [];
-      gs.deck = shuffle(gs.deck.concat(gs.discard));
-      gs.discard = [];
-
-      document.getElementById('fightLabel').textContent = `Fight ${fightIdx+1} / 10`;
-      battleLogEl.innerHTML = '';
-      log(`A ${gs.enemy.name} appears!`);
-
-      renderProgress();
-      showScreen('battle');
-      startTurn();
-    }
-
-    /* =====================================================
-       TURN MANAGEMENT
-    ===================================================== */
-    function startTurn() {
-      gs.turn++;
-      gs.energy = gs.energyMax;
-      gs.playerBlock = 0;       // block resets each turn
-      drawCards(5);
-      updateUI();
-      log(`--- Turn ${gs.turn} ---`);
-    }
-
-    function drawCards(n) {
-      for (let i = 0; i < n; i++) {
-        if (gs.deck.length === 0) {
-          if (gs.discard.length === 0) break;
-          gs.deck = shuffle(gs.discard);
-          gs.discard = [];
-          log('Reshuffled discard into deck.', 'card');
-        }
-        gs.hand.push(gs.deck.shift());
-      }
-    }
-
-    function endTurn() {
-      if (gs.animating) return;
-      // Move hand to discard
-      gs.discard = gs.discard.concat(gs.hand);
-      gs.hand = [];
-      gs.playerBlockedLastTurn = gs.playerBlock > 0;
-      gs.playerBlock = 0;
-      updateUI();
-
-      // Apply player poison
-      if (gs.playerPoison > 0) {
-        takeDamage(gs.playerPoison, true, 'poison');
-        gs.playerPoison = Math.max(0, gs.playerPoison - 1);
-        log(`Poison deals ${gs.playerPoison+1} damage to you. Poison reduced.`, 'damage');
-      }
-
-      if (gs.phase !== 'battle') return;
-
-      // Enemy acts
-      enemyTurn();
-    }
-
-    /* =====================================================
-       ENEMY TURN
-    ===================================================== */
-    function enemyTurn() {
-      if (!gs.enemy || gs.enemy.hp <= 0) return;
-      const e = gs.enemy;
-      const intent = e.intents[gs.enemyIntentIndex % e.intents.length];
-
-      // Troll regen
-      if (e.id === 'troll' && e.regen) {
-        const healed = Math.min(e.regen, e.hpMax - e.hp);
-        e.hp += healed;
-        if (healed > 0) log(`Troll regenerates ${healed} HP.`, 'heal');
-      }
-
-      gs.animating = true;
-      setTimeout(() => {
-        executeEnemyIntent(intent);
-        // Advance intent
-        gs.enemyIntentIndex = (gs.enemyIntentIndex + 1) % e.intents.length;
-        // Apply enemy poison
-        if (e.poison > 0) {
-          e.hp = Math.max(0, e.hp - e.poison);
-          e.poison = Math.max(0, e.poison - 1);
-          log(`Poison deals ${e.poison+1} damage to ${e.name}.`, 'damage');
-          showFloatingNumber(getEnemySpritePos(), `-${e.poison+1}`, '#86efac');
-          if (e.hp <= 0) {
-            gs.animating = false;
-            enemyDied();
-            return;
-          }
-        }
-        updateUI();
-        gs.animating = false;
-        // Start next player turn
-        if (gs.phase === 'battle') {
-          startTurn();
-        }
-      }, 300);
-    }
-
-    function executeEnemyIntent(intent) {
-      const e = gs.enemy;
-      switch (intent.type) {
-        case 'attack': {
-          let dmg = intent.value;
-          if (e.roarActive) { dmg *= 2; e.roarActive = false; log(`${e.name}'s Roar doubles the attack!`, 'enemy'); }
-          dealPlayerDamage(dmg, e.name);
-          break;
-        }
-        case 'aoe': {
-          let dmg = intent.value;
-          if (e.roarActive) { dmg *= 2; e.roarActive = false; }
-          dealPlayerDamage(dmg, e.name);
-          break;
-        }
-        case 'block': {
-          e.block = (e.block||0) + intent.value;
-          log(`${e.name} gains ${intent.value} block!`, 'enemy');
-          break;
-        }
-        case 'regen': {
-          // handled above for troll; generic case here
-          break;
-        }
-        case 'poison': {
-          gs.playerPoison += intent.value;
-          log(`${e.name} poisons you for ${intent.value}!`, 'enemy');
-          break;
-        }
-        case 'buff': {
-          // witch draws 2 — interpret as stronger attack next intent
-          log(`${e.name} mutters an incantation... (draws power)`, 'enemy');
-          break;
-        }
-        case 'roar': {
-          e.roarActive = true;
-          log(`${e.name} lets out a terrifying ROAR!`, 'enemy');
-          break;
-        }
-      }
-    }
-
-    function dealPlayerDamage(dmg, src) {
-      let absorbed = Math.min(gs.playerBlock, dmg);
-      gs.playerBlock -= absorbed;
-      let actual = dmg - absorbed;
-      gs.playerHp = Math.max(0, gs.playerHp - actual);
-      if (absorbed > 0) log(`${src} attacks for ${dmg}. Block absorbs ${absorbed}. You take ${actual} damage.`, 'damage');
-      else log(`${src} attacks for ${dmg}. You take ${actual} damage!`, 'damage');
-      if (actual > 0) showFloatingNumber(getPlayerPos(), `-${actual}`, '#fca5a5');
-      if (gs.playerHp <= 0) {
-        setTimeout(() => {
-          playerDied();
-        }, 100);
-      }
-    }
-
-    // lightning pierces block
-    function dealPlayerDamagePierce(dmg, src) {
-      gs.playerHp = Math.max(0, gs.playerHp - dmg);
-      log(`${src} pierces your block for ${dmg} damage!`, 'damage');
-      showFloatingNumber(getPlayerPos(), `-${dmg}`, '#fca5a5');
-      if (gs.playerHp <= 0) playerDied();
-    }
-
-    /* =====================================================
-       CARD PLAY
-    ===================================================== */
-    function playCard(handIndex) {
-      if (gs.animating) return;
-      const card = gs.hand[handIndex];
-      if (!card) return;
-      let cost = card.cost;
-      if (gs.playerCostReduction > 0) { cost = Math.max(0, cost - gs.playerCostReduction); gs.playerCostReduction = 0; }
-      if (gs.energy < cost) { log('Not enough energy!'); return; }
-
-      gs.energy -= cost;
-      gs.hand.splice(handIndex, 1);
-
-      log(`Played: ${card.name}`, 'card');
-      resolveCard(card);
-      gs.discard.push(card);
-      updateUI();
-    }
-
-    function resolveCard(card) {
-      const e = gs.enemy;
-      switch (card.id) {
-        case 'strike':      dealEnemyDamage(6);  break;
-        case 'powerStrike': dealEnemyDamage(15); break;
-        case 'defend':      gainBlock(5);        break;
-        case 'skill':       drawCards(2);        break;
-        case 'heavyStrike': dealEnemyDamage(12); break;
-        case 'twinStrike':  dealEnemyDamage(5); dealEnemyDamage(5); break;
-        case 'whirlwind':   dealEnemyDamage(4);  break;
-        case 'poisonBlade': dealEnemyDamage(6); e.poison = (e.poison||0) + 3; log(`Applied 3 poison to ${e.name}.`, 'damage'); break;
-        case 'execute':     dealEnemyDamage(e.hp < e.hpMax * 0.25 ? 40 : 8); break;
-        case 'ironShield':  gainBlock(12); break;
-        case 'barrier':     gainBlock(8); drawCards(1); break;
-        case 'deflect': {
-          gainBlock(6);
-          if (gs.playerBlockedLastTurn) { dealEnemyDamage(6); log('Deflect deals 6 bonus damage!', 'damage'); }
-          break;
-        }
-        case 'draw3':       drawCards(3); break;
-        case 'energyBurst': gs.energy = Math.min(gs.energy + 2, gs.energyMax + 2); log('Gained 2 energy.', 'card'); break;
-        case 'duplicate': {
-          if (gs.discard.length > 0) {
-            const copy = clone(gs.discard[gs.discard.length - 1]);
-            gs.hand.push(copy);
-            log(`Duplicated: ${copy.name}`, 'card');
-          } else log('Discard is empty — nothing to duplicate.', 'card');
-          break;
-        }
-        case 'meditation': gs.playerCostReduction = 1; log('Next card costs 1 less.', 'card'); break;
-        case 'fireball':    dealEnemyDamage(18); break;
-        case 'lightning': {
-          // pierces block
-          const dmg = 12;
-          e.hp = Math.max(0, e.hp - dmg);
-          log(`Lightning pierces block for ${dmg} damage!`, 'damage');
-          showFloatingNumber(getEnemySpritePos(), `-${dmg}`, '#c4b5fd');
-          shakeEnemy();
-          if (e.hp <= 0) setTimeout(() => enemyDied(), 150);
-          break;
-        }
-        case 'heal': {
-          const healed = Math.min(12, gs.playerHpMax - gs.playerHp);
-          gs.playerHp += healed;
-          log(`Healed ${healed} HP.`, 'heal');
-          showFloatingNumber(getPlayerPos(), `+${healed}`, '#86efac');
-          break;
-        }
-        case 'empower': gs.playerEmpower = true; log('Next attack deals double damage!', 'card'); break;
-      }
-    }
-
-    function dealEnemyDamage(base) {
-      const e = gs.enemy;
-      if (!e) return;
+    damageEnemy(base) {
+      const e = this.enemy;
       let dmg = base;
-      if (gs.playerEmpower) { dmg *= 2; gs.playerEmpower = false; log('Empower doubles your attack!', 'card'); }
-      let absorbed = Math.min(e.block || 0, dmg);
-      e.block -= absorbed;
-      let actual = dmg - absorbed;
+      if (this.playerEmpower) { dmg *= 2; this.playerEmpower = false; this.log('Empower doubles the attack!', 'card'); }
+      if (this.playerWeak > 0) dmg = Math.floor(dmg * 0.75);
+      const blocked = Math.min(e.block || 0, dmg);
+      e.block = (e.block || 0) - blocked;
+      const actual = dmg - blocked;
       e.hp = Math.max(0, e.hp - actual);
-      if (absorbed > 0) log(`Dealt ${actual} damage (${absorbed} blocked by enemy).`, 'damage');
-      else log(`Dealt ${actual} damage to ${e.name}.`, 'damage');
-      showFloatingNumber(getEnemySpritePos(), `-${actual}`, '#fca5a5');
+      if (blocked > 0) this.log(`Dealt ${actual} damage (${blocked} blocked by enemy).`, 'damage');
+      else this.log(`Dealt ${actual} damage to ${e.name}.`, 'damage');
+      spawnNum(enemyPos(), `-${actual}`, '#fca5a5');
       shakeEnemy();
-      if (e.hp <= 0) setTimeout(() => enemyDied(), 150);
-    }
+      this.refreshUI();
+      if (e.hp <= 0) setTimeout(() => enemyDied(), 200);
+    },
 
-    function gainBlock(n) {
-      gs.playerBlock += n;
-      log(`Gained ${n} block.`, 'block');
-    }
+    damagePlayer(base, selfHarm) {
+      const blocked = Math.min(this.playerBlock, base);
+      this.playerBlock -= blocked;
+      const actual = base - blocked;
+      this.playerHp = Math.max(0, this.playerHp - actual);
+      if (selfHarm) this.log(`Self: took ${actual} damage.`, 'damage');
+      else {
+        if (blocked > 0) this.log(`Blocked ${blocked}; took ${actual} damage.`, 'damage');
+        else this.log(`Took ${actual} damage!`, 'damage');
+      }
+      if (actual > 0) spawnNum(playerPos(), `-${actual}`, '#fca5a5');
+      this.refreshUI();
+      if (this.playerHp <= 0) setTimeout(() => playerDied(), 300);
+    },
 
-    /* =====================================================
-       ENEMY / PLAYER DEATH
-    ===================================================== */
-    function enemyDied() {
-      const name = gs.enemy.name;
-      gs.enemy.hp = 0;
-      gs.enemiesDefeated++;
-      updateUI();
-      log(`${name} has been defeated!`);
-      gs.animating = false;
+    applyEnemyPoison(n) {
+      this.enemy.poison = (this.enemy.poison || 0) + n;
+      this.log(`Applied ${n} poison to ${this.enemy.name}.`, 'poison');
+      this.refreshUI();
+    },
 
-      setTimeout(() => {
-        if (gs.fightIndex >= 9) {
-          // All enemies defeated
-          winGame();
-        } else {
-          showRewardScreen();
+    drawCards(n) {
+      for (let i = 0; i < n; i++) {
+        if (this.deck.length === 0) {
+          if (this.discard.length === 0) break;
+          this.deck = shuffle(this.discard); this.discard = [];
+          this.log('Reshuffled discard into deck.', 'card');
         }
-      }, 600);
+        this.hand.push(this.deck.shift());
+      }
+      this.refreshUI();
+    },
+
+    refreshUI() { renderBattle(this); },
+  };
+}
+
+/* =====================================================
+   CARD UTILS
+===================================================== */
+function cardById(id) { return CARD_DEFS.find(c => c.id === id); }
+
+function cloneCard(def) {
+  return { id:def.id, name:def.name, type:def.type, cost:def.cost, icon:def.icon, desc:def.desc,
+           effect:def.effect, _bonus:0 };
+}
+
+function buildStarterDeck() {
+  const d = [];
+  for (const [id, count] of Object.entries(STARTER_DECK_COUNTS)) {
+    for (let i = 0; i < count; i++) d.push(cloneCard(cardById(id)));
+  }
+  return shuffle(d);
+}
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function getRandomRewards(n) {
+  const pool = shuffle([...REWARD_POOL_IDS]);
+  return pool.slice(0, n).map(id => cloneCard(cardById(id)));
+}
+
+/* =====================================================
+   GAME FLOW
+===================================================== */
+function startGame() {
+  gs = newGameState();
+  gs.deck = buildStarterDeck();
+  document.getElementById('battleLog').innerHTML = '';
+  startFight(0);
+}
+
+function startFight(idx) {
+  gs.fightIndex = idx;
+  gs.busy = false;
+  gs._turn = 0;
+  gs._intentIdx = 0;
+  gs.playerBlock = 0;
+  gs.playerPoison = 0;
+  gs.playerWeak = 0;
+  gs.playerEmpower = false;
+  gs.nextFree = false;
+  gs.regenBlock = 0;
+  gs.energy = 3;
+
+  // All cards back to deck
+  gs.deck = shuffle([...gs.deck, ...gs.hand, ...gs.discard]);
+  gs.hand = [];
+  gs.discard = [];
+
+  // Clone enemy def
+  const def = ENEMY_SEQUENCE[idx];
+  gs.enemy = {
+    name: def.name, icon: def.icon,
+    hp: def.hp, hpMax: def.hp, isBoss: def.isBoss,
+    block: 0, poison: 0, empower: false,
+    _t: 0,
+    def: def,
+  };
+
+  document.getElementById('battleLog').innerHTML = '';
+  gs.log(`A ${def.name} appears!${def.isBoss?' — BOSS FIGHT!':''}`, def.isBoss?'special':'');
+  document.getElementById('fightLabel').textContent = `Fight ${idx+1} / 10`;
+  showScreen('battleScreen');
+  renderProgress();
+  startPlayerTurn();
+}
+
+function startPlayerTurn() {
+  gs._turn++;
+  gs.energy = 3;
+  gs.playerBlock = gs.regenBlock; // reset + regen
+  if (gs.regenBlock > 0) gs.log(`+${gs.regenBlock} block from Regenerate.`, 'block');
+
+  // Tick player poison
+  if (gs.playerPoison > 0) {
+    const dmg = gs.playerPoison;
+    gs.playerHp = Math.max(0, gs.playerHp - dmg);
+    gs.log(`Poison deals ${dmg} damage to you!`, 'poison');
+    spawnNum(playerPos(), `-${dmg}`, '#86efac');
+    gs.playerPoison = Math.max(0, gs.playerPoison - 1);
+    gs.refreshUI();
+    if (gs.playerHp <= 0) { setTimeout(()=>playerDied(), 300); return; }
+  }
+
+  // Tick player weak
+  if (gs.playerWeak > 0) gs.playerWeak--;
+
+  // Shadow Mage curses player at start of player turn
+  if (gs.enemy && gs.enemy.def.onPlayerTurn && gs.enemy.hp > 0) {
+    gs.enemy.def.onPlayerTurn(gs, gs.enemy);
+    if (gs.playerHp <= 0) return;
+  }
+
+  gs.drawCards(5);
+  gs.refreshUI();
+  gs.log(`Turn ${gs._turn}. Energy: 3.`);
+  document.getElementById('endTurnBtn').disabled = false;
+}
+
+function endPlayerTurn() {
+  if (gs.busy) return;
+  gs.busy = true;
+  document.getElementById('endTurnBtn').disabled = true;
+  gs.discard.push(...gs.hand);
+  gs.hand = [];
+  gs.refreshUI();
+  setTimeout(() => doEnemyTurn(), 300);
+}
+
+function doEnemyTurn() {
+  const e = gs.enemy;
+  if (!e || e.hp <= 0) return;
+
+  // Tick enemy poison
+  if (e.poison > 0) {
+    const dmg = e.poison;
+    e.hp = Math.max(0, e.hp - dmg);
+    gs.log(`Poison deals ${dmg} damage to ${e.name}!`, 'poison');
+    spawnNum(enemyPos(), `-${dmg}`, '#86efac');
+    e.poison = Math.max(0, e.poison - 1);
+    gs.refreshUI();
+    if (e.hp <= 0) { setTimeout(()=>enemyDied(), 300); return; }
+  }
+
+  // Determine intent index
+  const intentArr = e.def.intents(e);
+  const intentIdx = gs._intentIdx % intentArr.length;
+  gs.log(`${e.name}: ${intentArr[intentIdx].text}`, 'enemy');
+
+  // Execute
+  e.def.onTurn(gs, e, intentIdx);
+  gs._intentIdx++;
+  e._t++;
+
+  gs.refreshUI();
+
+  if (gs.playerHp <= 0) return; // playerDied already scheduled
+
+  setTimeout(() => {
+    gs.busy = false;
+    startPlayerTurn();
+  }, 300);
+}
+
+function playCard(idx) {
+  if (gs.busy) return;
+  const card = gs.hand[idx];
+  if (!card) return;
+  const cost = gs.nextFree ? 0 : card.cost;
+  if (gs.energy < cost) { gs.log('Not enough energy!'); return; }
+  gs.energy -= cost;
+  if (gs.nextFree) gs.nextFree = false;
+  gs.hand.splice(idx, 1);
+  gs.log(`Played: ${card.name}.`, 'card');
+  resolveCard(card, gs, false);
+  gs.discard.push(card);
+  gs.refreshUI();
+}
+
+function resolveCard(card, g, free) {
+  try { card.effect(g, card); } catch(err) { console.error('Card error:', err); }
+}
+
+function enemyDied() {
+  gs.enemy.hp = 0;
+  gs.enemiesDefeated++;
+  gs.log(`${gs.enemy.name} is defeated!`, 'special');
+  gs.refreshUI();
+
+  setTimeout(() => {
+    if (gs.fightIndex >= 9) {
+      gameWin();
+    } else {
+      showRewardScreen();
     }
+  }, 700);
+}
 
-    function playerDied() {
-      gs.playerHp = 0;
-      updateUI();
-      log('You have been defeated...', 'damage');
-      setTimeout(() => {
-        showGameOver();
-      }, 800);
-    }
+function playerDied() {
+  gs.playerHp = 0;
+  gs.refreshUI();
+  gs.log('You have been defeated...', 'damage');
+  setTimeout(() => gameOver(), 900);
+}
 
-    /* =====================================================
-       REWARD SCREEN
-    ===================================================== */
-    function showRewardScreen() {
-      // Pick 3 random non-duplicate reward cards
-      const pool = [...REWARD_POOL];
-      shuffle(pool);
-      const picks = pool.slice(0, 3);
-
-      document.getElementById('rewardFightLabel').textContent =
-        `Fight ${gs.fightIndex + 1} complete! Choose a card to add to your deck:`;
-
-      const rc = document.getElementById('rewardCards');
-      rc.innerHTML = '';
-      picks.forEach(cardId => {
-        const def = CARD_DEFS[cardId];
-        const el = buildCardElement(def, true);
-        el.addEventListener('click', () => pickReward(cardId));
-        rc.appendChild(el);
-      });
-
-      showScreen('reward');
-    }
-
-    function pickReward(cardId) {
-      const card = clone(CARD_DEFS[cardId]);
+/* =====================================================
+   REWARD
+===================================================== */
+function showRewardScreen() {
+  const picks = getRandomRewards(3);
+  document.getElementById('rewardFightLabel').textContent =
+    `Fight ${gs.fightIndex+1} complete! Choose a card to add to your deck:`;
+  const rc = document.getElementById('rewardCards');
+  rc.innerHTML = '';
+  picks.forEach(card => {
+    const el = buildCardEl(card, true);
+    el.addEventListener('click', () => {
       gs.deck.push(card);
-      log(`Added ${card.name} to your deck.`, 'card');
-      continueAfterReward();
-    }
-
-    function continueAfterReward() {
+      gs.log(`Added ${card.name} to your deck.`, 'card');
       startFight(gs.fightIndex + 1);
-    }
-
-    /* =====================================================
-       WIN / LOSE
-    ===================================================== */
-    function winGame() {
-      const score = gs.enemiesDefeated * 100 + gs.playerHp * 5;
-      document.getElementById('winScore').textContent = `Score: ${score}`;
-      document.getElementById('winBreakdown').textContent =
-        `${gs.enemiesDefeated} enemies × 100 + ${gs.playerHp} HP × 5`;
-      showScreen('win');
-      window.dispatchEvent(new CustomEvent('gameOver', {
-        detail: { game: 'card-quest', score }
-      }));
-    }
-
-    function showGameOver() {
-      const score = gs.enemiesDefeated * 100 + gs.playerHp * 5;
-      document.getElementById('gameOverScore').textContent = `Score: ${score}`;
-      document.getElementById('gameOverBreakdown').textContent =
-        `${gs.enemiesDefeated} enemies defeated × 100`;
-      document.getElementById('gameOverMsg').textContent =
-        `You fell on Fight ${gs.fightIndex + 1} against ${gs.enemy ? gs.enemy.name : 'the enemy'}.`;
-      showScreen('gameover');
-      window.dispatchEvent(new CustomEvent('gameOver', {
-        detail: { game: 'card-quest', score }
-      }));
-    }
-
-    /* =====================================================
-       RENDER UI
-    ===================================================== */
-    function updateUI() {
-      if (gs.phase !== 'battle') return;
-      const e = gs.enemy;
-
-      // Enemy
-      if (e) {
-        document.getElementById('enemySprite').textContent = e.icon;
-        document.getElementById('enemyName').textContent = e.name;
-        const eHpPct = Math.max(0, (e.hp / e.hpMax) * 100);
-        document.getElementById('enemyHpBar').style.width = eHpPct + '%';
-        document.getElementById('enemyHpText').textContent = `${Math.max(0,e.hp)} / ${e.hpMax} HP`;
-
-        // Enemy statuses
-        const statDiv = document.getElementById('enemyStatuses');
-        statDiv.innerHTML = '';
-        if (e.block > 0) {
-          const b = document.createElement('span');
-          b.className = 'status-badge block';
-          b.textContent = `🛡️ ${e.block}`;
-          statDiv.appendChild(b);
-        }
-        if (e.poison > 0) {
-          const p = document.createElement('span');
-          p.className = 'status-badge poison';
-          p.textContent = `☠️ ${e.poison}`;
-          statDiv.appendChild(p);
-        }
-        if (e.roarActive) {
-          const r = document.createElement('span');
-          r.className = 'status-badge roar';
-          r.textContent = `😤 Roar`;
-          statDiv.appendChild(r);
-        }
-
-        // Intent
-        const intent = e.intents[gs.enemyIntentIndex % e.intents.length];
-        document.getElementById('intentBadge').querySelector('.intent-icon').textContent = getIntentIcon(intent.type);
-        document.getElementById('intentText').textContent = intent.label;
-      }
-
-      // Player HP
-      const hpPct = (gs.playerHp / gs.playerHpMax) * 100;
-      document.getElementById('playerHpBar').style.width = hpPct + '%';
-      document.getElementById('playerHpText').textContent = `${gs.playerHp}/${gs.playerHpMax}`;
-
-      // Block
-      const blockChip = document.getElementById('blockChip');
-      if (gs.playerBlock > 0) {
-        blockChip.style.display = 'inline-flex';
-        document.getElementById('blockText').textContent = gs.playerBlock;
-      } else {
-        blockChip.style.display = 'none';
-      }
-
-      // Player poison
-      const ppChip = document.getElementById('playerPoisonChip');
-      if (gs.playerPoison > 0) {
-        ppChip.style.display = 'inline-flex';
-        document.getElementById('playerPoisonText').textContent = gs.playerPoison;
-      } else {
-        ppChip.style.display = 'none';
-      }
-
-      // Energy
-      document.getElementById('energyText').textContent = `${gs.energy}/${gs.energyMax}`;
-
-      // Deck info
-      const total = gs.deck.length + gs.discard.length + gs.hand.length;
-      document.getElementById('deckText').textContent = `${gs.deck.length}/${total}`;
-
-      // Hand
-      renderHand();
-
-      document.getElementById('handLabel').textContent =
-        `Hand (${gs.hand.length} cards) — ${gs.energy} energy`;
-    }
-
-    function getIntentIcon(type) {
-      const map = { attack:'⚔️', aoe:'🔥', block:'🛡️', regen:'💚', poison:'☠️', buff:'✨', roar:'😤' };
-      return map[type] || '❓';
-    }
-
-    function renderHand() {
-      const container = document.getElementById('handCards');
-      container.innerHTML = '';
-      gs.hand.forEach((card, i) => {
-        let cost = card.cost;
-        if (gs.playerCostReduction > 0) cost = Math.max(0, cost - 1);
-        const el = buildCardElement(card, false, cost);
-        if (gs.energy < cost) el.classList.add('unaffordable');
-        el.addEventListener('click', () => {
-          if (!el.classList.contains('unaffordable') && !gs.animating) playCard(i);
-        });
-        container.appendChild(el);
-      });
-    }
-
-    function buildCardElement(def, isReward=false, overrideCost=null) {
-      const cost = overrideCost !== null ? overrideCost : def.cost;
-      const el = document.createElement('div');
-      el.className = `card ${def.type}${isReward ? ' reward-card' : ''}`;
-      el.innerHTML = `
-        <div class="card-header">
-          <span class="card-name">${def.name}</span>
-          <span class="card-cost cost-${cost}">${cost}</span>
-        </div>
-        <div class="card-icon">${def.icon}</div>
-        <span class="card-type-badge">${def.type.charAt(0).toUpperCase()+def.type.slice(1)}</span>
-        <p class="card-desc">${def.desc}</p>
-      `;
-      return el;
-    }
-
-    /* =====================================================
-       FLOATING DAMAGE NUMBERS
-    ===================================================== */
-    function showFloatingNumber(pos, text, color) {
-      const el = document.createElement('div');
-      el.className = 'damage-number';
-      el.style.color = color;
-      el.style.left = (pos.x - 20) + 'px';
-      el.style.top = (pos.y - 10) + 'px';
-      el.textContent = text;
-      document.body.appendChild(el);
-      el.addEventListener('animationend', () => el.remove());
-    }
-
-    function getEnemySpritePos() {
-      const el = document.getElementById('enemySprite');
-      const r = el.getBoundingClientRect();
-      return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
-    }
-
-    function getPlayerPos() {
-      const el = document.getElementById('playerHpBar');
-      const r = el.getBoundingClientRect();
-      return { x: r.left + r.width / 2, y: r.top };
-    }
-
-    function shakeEnemy() {
-      const el = document.getElementById('enemySprite');
-      el.classList.remove('shake');
-      void el.offsetWidth;
-      el.classList.add('shake');
-    }
-
-    /* =====================================================
-       DECK VIEWER
-    ===================================================== */
-    function openDeckViewer() {
-      const allCards = [...gs.deck, ...gs.discard, ...gs.hand];
-      allCards.sort((a,b) => a.name.localeCompare(b.name));
-      const container = document.getElementById('deckViewerCards');
-      container.innerHTML = '';
-      allCards.forEach(card => {
-        const el = buildCardElement(card, false);
-        el.classList.add('deck-card');
-        container.appendChild(el);
-      });
-      document.getElementById('deckViewerCount').textContent = allCards.length;
-      document.getElementById('deckViewerOverlay').classList.add('open');
-    }
-
-    /* =====================================================
-       EVENT LISTENERS
-    ===================================================== */
-    document.getElementById('startBtn').addEventListener('click', () => {
-      gs = freshGameState();
-      startFight(0);
     });
+    rc.appendChild(el);
+  });
+  showScreen('rewardScreen');
+}
 
-    document.getElementById('endTurnBtn').addEventListener('click', () => {
-      if (gs.phase === 'battle' && !gs.animating) endTurn();
-    });
+/* =====================================================
+   WIN / LOSE
+===================================================== */
+function gameWin() {
+  const score = gs.enemiesDefeated * 100 + gs.playerHp * 5;
+  window.dispatchEvent(new CustomEvent('gameOver', { detail: { game: 'card-quest', score } }));
+  document.getElementById('winScore').textContent = `Score: ${score}`;
+  document.getElementById('winDetail').textContent =
+    `${gs.enemiesDefeated} enemies × 100 + ${gs.playerHp} HP × 5`;
+  showScreen('winScreen');
+}
 
-    document.getElementById('skipRewardBtn').addEventListener('click', () => {
-      continueAfterReward();
-    });
+function gameOver() {
+  const score = gs.enemiesDefeated * 100 + gs.playerHp * 5;
+  window.dispatchEvent(new CustomEvent('gameOver', { detail: { game: 'card-quest', score } }));
+  document.getElementById('gameOverScore').textContent = `Score: ${score}`;
+  document.getElementById('gameOverMsg').textContent =
+    `Fell on Fight ${gs.fightIndex+1} against ${gs.enemy ? gs.enemy.name : 'an enemy'}.`;
+  document.getElementById('gameOverDetail').textContent =
+    `${gs.enemiesDefeated} enemies defeated × 100`;
+  showScreen('gameOverScreen');
+}
 
-    document.getElementById('winRestartBtn').addEventListener('click', () => {
-      gs = freshGameState();
-      showScreen('title');
-    });
+/* =====================================================
+   RENDER
+===================================================== */
+function showScreen(name) {
+  const ids = ['titleScreen','battleScreen','rewardScreen','winScreen','gameOverScreen'];
+  ids.forEach(id => document.getElementById(id).classList.remove('active'));
+  document.getElementById(name).classList.add('active');
+}
 
-    document.getElementById('goRestartBtn').addEventListener('click', () => {
-      gs = freshGameState();
-      showScreen('title');
-    });
+function renderProgress() {
+  const pb = document.getElementById('progressBar');
+  pb.innerHTML = '';
+  ENEMY_SEQUENCE.forEach((def, i) => {
+    const dot = document.createElement('div');
+    dot.className = 'progress-dot' + (def.isBoss ? ' boss' : '');
+    if (i < gs.fightIndex) dot.classList.add('done');
+    else if (i === gs.fightIndex) dot.classList.add('current');
+    dot.title = `${i+1}. ${def.name}${def.isBoss?' (Boss)':''}`;
+    pb.appendChild(dot);
+  });
+}
 
-    document.getElementById('deckInfo').addEventListener('click', () => {
-      if (gs.phase === 'battle') openDeckViewer();
-    });
+function renderBattle(g) {
+  const e = g.enemy;
+  if (!e) return;
 
-    document.getElementById('deckViewerClose').addEventListener('click', () => {
-      document.getElementById('deckViewerOverlay').classList.remove('open');
-    });
+  // Enemy
+  document.getElementById('enemySprite').textContent = e.icon;
+  document.getElementById('enemyName').textContent = e.name;
+  document.getElementById('bossBadge').style.display = e.isBoss ? '' : 'none';
+  const eHpPct = Math.max(0, e.hp / e.hpMax * 100);
+  document.getElementById('enemyHpBar').style.width = eHpPct + '%';
+  document.getElementById('enemyHpText').textContent = `${Math.max(0,e.hp)} / ${e.hpMax} HP`;
 
-    document.getElementById('deckViewerOverlay').addEventListener('click', (e) => {
-      if (e.target === document.getElementById('deckViewerOverlay')) {
-        document.getElementById('deckViewerOverlay').classList.remove('open');
-      }
-    });
+  // Enemy statuses
+  const es = document.getElementById('enemyStatuses');
+  es.innerHTML = '';
+  if ((e.block||0) > 0) es.innerHTML += `<span class="status-chip sBlock">🛡️ ${e.block}</span>`;
+  if ((e.poison||0) > 0) es.innerHTML += `<span class="status-chip sPoison">☠️ ${e.poison}</span>`;
+  if (e.empower) es.innerHTML += `<span class="status-chip sEmpower">💫 Empowered</span>`;
 
-    // Keyboard shortcut: Enter = end turn
-    document.addEventListener('keydown', e => {
-      if (e.key === 'Enter' && gs.phase === 'battle' && !gs.animating) endTurn();
-    });
+  // Intent
+  const intentArr = e.def.intents(e);
+  const intent = intentArr[gs._intentIdx % intentArr.length];
+  document.getElementById('intentIcon').textContent = intent.icon;
+  document.getElementById('intentText').textContent = intent.text;
 
-    /* =====================================================
-       INIT
-    ===================================================== */
-    gs = freshGameState();
-  </script>
+  // Player HP
+  const hpPct = Math.max(0, g.playerHp / g.playerHpMax * 100);
+  document.getElementById('playerHpBar').style.width = hpPct + '%';
+  document.getElementById('playerHpText').textContent = `${g.playerHp}/${g.playerHpMax}`;
 
+  // Player statuses
+  const ps = document.getElementById('playerStatuses');
+  ps.innerHTML = '';
+  if (g.playerBlock > 0) ps.innerHTML += `<span class="status-chip sBlock">🛡️ ${g.playerBlock}</span>`;
+  if (g.playerPoison > 0) ps.innerHTML += `<span class="status-chip sPoison">☠️ ${g.playerPoison}</span>`;
+  if (g.playerWeak > 0) ps.innerHTML += `<span class="status-chip sWeak">💔 Weak ${g.playerWeak}</span>`;
+  if (g.playerEmpower) ps.innerHTML += `<span class="status-chip sEmpower">💫 Empowered</span>`;
+  if (g.nextFree) ps.innerHTML += `<span class="status-chip sRegen">✨ Next Free</span>`;
+  if (g.regenBlock > 0) ps.innerHTML += `<span class="status-chip sRegen">♻️ +${g.regenBlock}/turn</span>`;
+
+  // Energy
+  document.getElementById('energyText').textContent = `${g.energy}/3`;
+
+  // Deck
+  const total = g.deck.length + g.discard.length + g.hand.length;
+  document.getElementById('deckText').textContent = `${g.deck.length}/${total}`;
+  document.getElementById('handLabel').textContent = `Hand (${g.hand.length}) — ${g.energy} energy`;
+
+  // Hand
+  renderHand(g);
+}
+
+function renderHand(g) {
+  const container = document.getElementById('handCards');
+  container.innerHTML = '';
+  g.hand.forEach((card, i) => {
+    const cost = g.nextFree ? 0 : card.cost;
+    const unafford = g.energy < cost;
+    const el = buildCardEl(card, false, unafford, cost);
+    el.addEventListener('click', () => { if (!unafford && !g.busy) playCard(i); });
+    container.appendChild(el);
+  });
+}
+
+function buildCardEl(card, isReward, unaffordable=false, overrideCost=null) {
+  const cost = overrideCost !== null ? overrideCost : card.cost;
+  const cls = {attack:'cAttack', defense:'cDefense', skill:'cSkill', magic:'cMagic'}[card.type] || 'cSkill';
+  const el = document.createElement('div');
+  el.className = `card ${cls}${isReward?' rCard':''}${unaffordable?' unaffordable':''}`;
+  el.innerHTML = `
+    <div class="card-header">
+      <span class="card-name">${esc(card.name)}</span>
+      <span class="card-cost cost-${cost}">${cost}</span>
+    </div>
+    <div class="card-icon">${card.icon}</div>
+    <span class="card-type-badge">${card.type.charAt(0).toUpperCase()+card.type.slice(1)}</span>
+    <p class="card-desc">${esc(card.desc)}</p>
+  `;
+  return el;
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+/* =====================================================
+   VFX
+===================================================== */
+function spawnNum(pos, text, color) {
+  const el = document.createElement('div');
+  el.className = 'damage-number';
+  el.style.color = color;
+  el.style.left = (pos.x - 18) + 'px';
+  el.style.top = (pos.y - 14) + 'px';
+  el.textContent = text;
+  document.body.appendChild(el);
+  el.addEventListener('animationend', () => el.remove());
+}
+
+function enemyPos() {
+  const el = document.getElementById('enemySprite');
+  const r = el.getBoundingClientRect();
+  return { x: r.left + r.width/2, y: r.top + r.height/2 };
+}
+
+function playerPos() {
+  const el = document.getElementById('playerHpBar');
+  const r = el.getBoundingClientRect();
+  return { x: r.left + r.width/2, y: r.top };
+}
+
+function shakeEnemy() {
+  const el = document.getElementById('enemySprite');
+  el.classList.remove('shake');
+  void el.offsetWidth;
+  el.classList.add('shake');
+}
+
+/* =====================================================
+   DECK VIEWER
+===================================================== */
+function openDeckViewer() {
+  const all = [...gs.deck, ...gs.discard, ...gs.hand].sort((a,b)=>a.name.localeCompare(b.name));
+  document.getElementById('deckViewerCount').textContent = all.length;
+  const grid = document.getElementById('deckViewerCards');
+  grid.innerHTML = '';
+  all.forEach(card => {
+    const el = buildCardEl(card, false);
+    el.classList.add('dCard');
+    grid.appendChild(el);
+  });
+  document.getElementById('deckOverlay').classList.add('open');
+}
+
+/* =====================================================
+   EVENT LISTENERS
+===================================================== */
+document.getElementById('startBtn').addEventListener('click', startGame);
+
+document.getElementById('endTurnBtn').addEventListener('click', () => {
+  if (gs && !gs.busy) endPlayerTurn();
+});
+
+document.getElementById('skipRewardBtn').addEventListener('click', () => {
+  startFight(gs.fightIndex + 1);
+});
+
+document.getElementById('winRestartBtn').addEventListener('click', () => showScreen('titleScreen'));
+document.getElementById('goRestartBtn').addEventListener('click', () => showScreen('titleScreen'));
+
+document.getElementById('deckChip').addEventListener('click', () => {
+  if (gs) openDeckViewer();
+});
+document.getElementById('deckCloseBtn').addEventListener('click', () => {
+  document.getElementById('deckOverlay').classList.remove('open');
+});
+document.getElementById('deckOverlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('deckOverlay'))
+    document.getElementById('deckOverlay').classList.remove('open');
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && gs && !gs.busy) endPlayerTurn();
+});
+</script>
 </body>
 </html>
