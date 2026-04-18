@@ -56,6 +56,15 @@ const GAMES = [
 
   // ----- Action -----
   {
+    id: 'typing-terror',
+    title: 'Typing Terror',
+    desc: 'Type falling words to defend your city! Race against 12 waves of increasingly difficult words.',
+    category: 'action',
+    icon: '⌨️',
+    path: 'games/typing-terror.html',
+    tags: [],
+  },
+  {
     id: 'space-shooter',
     title: 'Space Shooter',
     desc: 'Top-down shooter: blast waves of enemies, dodge bullets, and defeat epic bosses.',

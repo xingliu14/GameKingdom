@@ -1,241 +1,149 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Typing Terror — GameKingdom</title>
-  <meta name="description" content="Type falling words to defend your city from destruction!">
+  <meta name="description" content="Type falling words to defend your city from destruction!" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --bg: #0f0f13;
-      --surface: #1a1a24;
-      --accent: #7c5cfc;
-      --text: #e8e8f0;
-      --border: #2e2e3e;
-      --text-dim: #888899;
+      --bg: #0f0f13; --surface: #1a1a24; --border: #2e2e3e;
+      --accent: #7c5cfc; --text: #e8e8f0; --text-dim: #888899;
     }
     body {
-      background: var(--bg);
-      color: var(--text);
+      background: var(--bg); color: var(--text);
       font-family: 'Segoe UI', system-ui, sans-serif;
-      min-height: 100dvh;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
+      min-height: 100dvh; display: flex; flex-direction: column;
     }
     a { color: var(--accent); }
 
     .game-nav {
-      padding: 10px 16px;
+      padding: 12px 16px;
       background: var(--surface);
       border-bottom: 1px solid var(--border);
       display: flex;
       align-items: center;
       gap: 12px;
-      flex-shrink: 0;
-      z-index: 10;
     }
     .back-link { font-size: .9rem; text-decoration: none; }
     .back-link:hover { text-decoration: underline; }
     .game-nav h1 { font-size: 1.1rem; font-weight: 700; }
 
-    #gameWrapper {
+    #gameContainer {
       flex: 1;
       display: flex;
       flex-direction: column;
       align-items: center;
-      position: relative;
-      overflow: hidden;
+      justify-content: center;
+      padding: 16px;
+      gap: 12px;
     }
 
-    /* HUD */
     #hud {
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      padding: 8px 14px;
-      z-index: 5;
-      pointer-events: none;
-      background: linear-gradient(to bottom, rgba(15,15,19,0.92) 60%, transparent);
-    }
-    .hud-left, .hud-right, .hud-center {
-      display: flex;
-      flex-direction: column;
-      gap: 3px;
-    }
-    .hud-center { align-items: center; }
-    .hud-label {
-      font-size: 0.65rem;
-      color: var(--text-dim);
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-    }
-    .hud-value {
-      font-size: 1.25rem;
-      font-weight: 700;
-      color: var(--text);
-      line-height: 1;
-    }
-    #waveLabel { color: var(--accent); font-size: 1rem; }
-    #livesDisplay { display: flex; gap: 4px; align-items: center; }
-    .heart { font-size: 1.1rem; transition: transform 0.15s; }
-    .heart.lost { opacity: 0.25; transform: scale(0.8); }
-    #comboDisplay {
-      font-size: 1.4rem;
-      font-weight: 900;
-      color: #ffd700;
-      text-shadow: 0 0 12px #ffd70099;
-      min-height: 1.6rem;
-    }
-    #accuracyVal { font-size: 0.95rem; color: #7ef77e; }
-
-    /* canvas */
-    #gameCanvas {
-      display: block;
-      width: 100%;
-      height: 100%;
-      position: absolute;
-      top: 0; left: 0;
-    }
-
-    /* Bottom input bar */
-    #inputBar {
-      position: absolute;
-      bottom: 0; left: 0; right: 0;
-      height: 40px;
-      background: rgba(26,26,36,0.92);
-      border-top: 1px solid var(--border);
+      width: 600px;
+      max-width: 100%;
       display: flex;
       align-items: center;
-      justify-content: center;
-      gap: 12px;
-      z-index: 5;
-      padding: 0 14px;
-    }
-    #typingLabel {
-      font-size: 0.7rem;
-      color: var(--text-dim);
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      white-space: nowrap;
-    }
-    #typingDisplay {
-      font-size: 1rem;
-      font-weight: 700;
-      font-family: 'Courier New', monospace;
-      min-width: 160px;
-      color: #7ef77e;
-      letter-spacing: 0.08em;
-    }
-    #wpmDisplay {
-      font-size: 0.75rem;
-      color: var(--text-dim);
-      white-space: nowrap;
+      justify-content: space-between;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-size: 0.85rem;
+      gap: 8px;
+      flex-wrap: wrap;
     }
 
-    /* Overlays */
-    .overlay {
+    #hud .stat { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+    #hud .stat-label { font-size: 0.65rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; }
+    #hud .stat-value { font-size: 1rem; font-weight: 700; }
+
+    #comboDisplay {
+      font-size: 1.1rem;
+      font-weight: 900;
+      color: #ffd700;
+      text-shadow: 0 0 10px #ffd700, 0 0 20px #ff8800;
+      min-width: 90px;
+      text-align: center;
+    }
+
+    #inputDisplay {
+      width: 600px;
+      max-width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 36px;
+    }
+    #inputDisplay .label { color: var(--text-dim); font-size: 0.75rem; }
+    #inputDisplay .typed { color: #4ade80; font-family: monospace; font-weight: 700; font-size: 1rem; letter-spacing: 0.05em; }
+
+    #canvasWrapper {
+      position: relative;
+      width: 600px;
+      max-width: 100%;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+
+    #overlay {
       position: absolute;
       inset: 0;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      background: rgba(15,15,19,0.88);
-      z-index: 20;
-      gap: 16px;
-      padding: 20px;
+      background: rgba(15,15,19,0.93);
+      border-radius: 8px;
+      gap: 14px;
+      z-index: 10;
     }
-    .overlay h2 {
-      font-size: 2.2rem;
-      font-weight: 900;
+    #overlay.hidden { display: none; }
+
+    #overlay h2 {
+      font-size: 2rem; font-weight: 900;
       color: var(--accent);
-      text-shadow: 0 0 20px var(--accent);
-      margin-bottom: 4px;
+      text-shadow: 0 0 24px var(--accent);
     }
-    .overlay p {
-      color: var(--text-dim);
-      font-size: 0.95rem;
-      max-width: 420px;
-      text-align: center;
-      line-height: 1.5;
-    }
-    .overlay .stat-grid {
+    #overlay p { color: var(--text-dim); font-size: 0.9rem; text-align: center; max-width: 340px; }
+    #overlay .big-score { font-size: 2.5rem; font-weight: 900; color: #ffd700; }
+
+    #overlayStats {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 10px 24px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 14px 20px;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px 28px;
+      font-size: 0.85rem;
     }
-    .stat-row { display: flex; flex-direction: column; align-items: center; }
-    .stat-row .val { font-size: 1.4rem; font-weight: 700; color: var(--text); }
-    .stat-row .lbl { font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; }
+    #overlayStats .s-label { color: var(--text-dim); }
+    #overlayStats .s-value { color: var(--text); font-weight: 700; text-align: right; }
+
     .btn {
       background: var(--accent);
-      color: #fff;
+      color: white;
       border: none;
+      padding: 12px 28px;
       border-radius: 8px;
-      padding: 10px 32px;
       font-size: 1rem;
       font-weight: 700;
       cursor: pointer;
       transition: opacity 0.15s, transform 0.1s;
     }
-    .btn:hover { opacity: 0.88; transform: scale(1.04); }
+    .btn:hover { opacity: 0.85; transform: scale(1.03); }
     .btn:active { transform: scale(0.97); }
-    .btn-secondary {
-      background: transparent;
-      border: 1px solid var(--border);
-      color: var(--text-dim);
-      padding: 8px 22px;
-      font-size: 0.9rem;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: border-color 0.15s;
-    }
-    .btn-secondary:hover { border-color: var(--accent); color: var(--text); }
 
-    #waveBreakOverlay {
-      background: rgba(15,15,19,0.82);
-    }
-    #waveBreakOverlay h2 { font-size: 1.6rem; }
-
-    /* Controls hint */
-    #controlsHint {
-      font-size: 0.75rem;
-      color: var(--text-dim);
-      display: flex;
-      gap: 14px;
-      flex-wrap: wrap;
-      justify-content: center;
-    }
-    #controlsHint span { white-space: nowrap; }
-    #controlsHint kbd {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      padding: 1px 5px;
-      font-size: 0.72rem;
-    }
-
-    .hidden { display: none !important; }
-
-    /* shield flash overlay */
-    #shieldFlash {
-      position: absolute;
-      inset: 0;
-      background: rgba(124,92,252,0.08);
-      border: 2px solid rgba(124,92,252,0.4);
-      pointer-events: none;
-      z-index: 4;
-      opacity: 0;
-      transition: opacity 0.3s;
-    }
+    .lives-display { font-size: 1rem; letter-spacing: 2px; }
   </style>
 </head>
 <body>
@@ -245,1010 +153,789 @@
   <h1>Typing Terror</h1>
 </nav>
 
-<div id="gameWrapper">
-  <canvas id="gameCanvas"></canvas>
-
-  <!-- HUD -->
+<div id="gameContainer">
   <div id="hud">
-    <div class="hud-left">
-      <span class="hud-label">Score</span>
-      <span class="hud-value" id="scoreVal">0</span>
-      <span class="hud-label" style="margin-top:6px">Lives</span>
-      <div id="livesDisplay"></div>
+    <div class="stat">
+      <span class="stat-label">Score</span>
+      <span class="stat-value" id="scoreDisplay">0</span>
     </div>
-    <div class="hud-center">
-      <span class="hud-label">Wave</span>
-      <span class="hud-value" id="waveLabel">1</span>
-      <span id="comboDisplay"></span>
+    <div class="stat">
+      <span class="stat-label">Lives</span>
+      <span class="stat-value lives-display" id="livesDisplay">❤️❤️❤️❤️❤️</span>
     </div>
-    <div class="hud-right" style="align-items:flex-end">
-      <span class="hud-label">Accuracy</span>
-      <span id="accuracyVal">—</span>
-      <span class="hud-label" style="margin-top:6px">Words/min</span>
-      <span id="wpmVal" style="font-size:0.95rem;color:#a0d8ef">—</span>
+    <div class="stat">
+      <span class="stat-label">Wave</span>
+      <span class="stat-value" id="waveDisplay">1</span>
+    </div>
+    <div class="stat">
+      <span class="stat-label">WPM</span>
+      <span class="stat-value" id="wpmDisplay">0</span>
+    </div>
+    <div id="comboDisplay"></div>
+  </div>
+
+  <div id="canvasWrapper">
+    <canvas id="gameCanvas" width="600" height="480"></canvas>
+    <div id="overlay">
+      <h2 id="overlayTitle">Typing Terror</h2>
+      <p id="overlaySubtitle">Type falling words to defend your city from destruction!</p>
+      <div id="overlayStats"></div>
+      <div class="big-score" id="overlayScore" style="display:none"></div>
+      <button class="btn" id="overlayBtn">Start Game</button>
     </div>
   </div>
 
-  <!-- Shield flash border -->
-  <div id="shieldFlash"></div>
-
-  <!-- Input bar -->
-  <div id="inputBar">
-    <span id="typingLabel">Typing:</span>
-    <span id="typingDisplay">&nbsp;</span>
-    <span id="wpmDisplay"></span>
-  </div>
-
-  <!-- Start Screen -->
-  <div class="overlay" id="startOverlay">
-    <h2>Typing Terror</h2>
-    <p>Words fall from above — type them before they destroy your city! Special words grant powerful bonuses.</p>
-    <div id="controlsHint">
-      <span>Type to target</span>
-      <span><kbd>Tab</kbd> switch target</span>
-      <span><kbd>Esc</kbd> deselect</span>
-    </div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;font-size:0.82rem;color:var(--text-dim);">
-      <span style="color:#ffd700">BONUS</span> +50pts &nbsp;
-      <span style="color:#5bc8fa">SLOW</span> slow words &nbsp;
-      <span style="color:#bf7fff">SHIELD</span> invincibility &nbsp;
-      <span style="color:#ff5555">BOMB</span> clear screen
-    </div>
-    <button class="btn" id="startBtn">Start Game</button>
-  </div>
-
-  <!-- Game Over -->
-  <div class="overlay hidden" id="gameOverOverlay">
-    <h2>Game Over</h2>
-    <div class="stat-grid">
-      <div class="stat-row"><span class="val" id="goScore">0</span><span class="lbl">Score</span></div>
-      <div class="stat-row"><span class="val" id="goWave">1</span><span class="lbl">Wave Reached</span></div>
-      <div class="stat-row"><span class="val" id="goAccuracy">0%</span><span class="lbl">Accuracy</span></div>
-      <div class="stat-row"><span class="val" id="goWpm">0</span><span class="lbl">Best WPM</span></div>
-    </div>
-    <button class="btn" id="restartBtn">Play Again</button>
-    <a href="../index.html" class="btn-secondary">Back to GameKingdom</a>
-  </div>
-
-  <!-- Wave Break -->
-  <div class="overlay hidden" id="waveBreakOverlay">
-    <h2 id="waveBreakTitle">Wave 1 Complete!</h2>
-    <div class="stat-grid">
-      <div class="stat-row"><span class="val" id="wbScore">0</span><span class="lbl">Score</span></div>
-      <div class="stat-row"><span class="val" id="wbWords">0</span><span class="lbl">Words Typed</span></div>
-    </div>
-    <p id="waveBreakCountdown" style="font-size:1.1rem;color:var(--accent)">Next wave in 3…</p>
+  <div id="inputDisplay">
+    <span class="label">Typing:</span>
+    <span class="typed" id="typedText"></span>
   </div>
 </div>
 
 <script>
 'use strict';
 
-// ─────────────────────────────────────────────
+// ================================================================
 //  WORD LISTS
-// ─────────────────────────────────────────────
+// ================================================================
 const WORDS = {
   easy: [
-    'cat','dog','run','sun','box','cup','key','red','big','fly',
-    'hat','lip','mud','net','oak','pan','rug','sea','top','van',
-    'age','art','bay','can','cut','dim','eat','fan','get','ice',
-    'jam','kit','lap','map','new','old','pay','raw','say','ten',
-    'use','way','yes','zoo','ace','bat','cow','dot','egg','log'
+    'cat','dog','run','jump','fire','blue','star','moon','rock','tree',
+    'bird','fish','sand','wind','rain','snow','lake','hill','path','door',
+    'lamp','bell','book','hand','foot','nose','ears','eyes','arms','legs',
+    'neck','skin','hair','lips','chin','bone','wall','roof','cup','jar',
+    'box','bag','hat','cap','shoe','sock','ring','key','pin','sun'
   ],
   medium: [
-    'apple','bread','cloud','dance','eagle','flame','grace','heart','index','judge',
-    'knife','light','magic','night','ocean','peace','queen','river','stone','tiger',
-    'under','voice','water','xenon','yacht','zebra','above','brave','clean','drive',
-    'event','front','globe','happy','issue','jewel','kraft','large','march','north',
-    'order','paper','quick','radio','smile','table','unity','valid','world','plane'
+    'planet','rocket','castle','wizard','dragon','forest','pirate','zombie',
+    'goblin','archer','hunter','knight','farmer','dancer','singer','runner',
+    'jumper','winner','loser','battle','shield','sword','magic','potion',
+    'chest','tower','bridge','river','ocean','cloud','storm','night','light',
+    'flame','frost','stone','glass','metal','tiger','eagle','snake','horse',
+    'whale','shark','crane','robin','swallow','falcon','heron','comet'
   ],
   hard: [
-    'balance','cabinet','diamond','example','factory','general','harvest','imagine',
-    'journey','kingdom','lantern','monitor','natural','opinion','pacific','quality',
-    'rainbow','science','thunder','unusual','venture','weather','younger','ancient',
-    'boolean','captain','devoted','eclipse','forever','genuine','highest','impulse',
-    'justice','kitchen','library','morning','nervous','organic','pyramid','quarter',
-    'resolve','climate'
+    'thunder','explore','village','harvest','crystal','lantern','fortress',
+    'balance','triumph','dungeon','monster','warrior','treasure','diamond',
+    'phantom','captain','soldier','emperor','kingdom','ancient','morning',
+    'evening','twilight','sunrise','mansion','library','academy','hallway',
+    'journey','mission','problem','success','failure','mystery','history',
+    'biology','science','physics','engines','machine','factory','network',
+    'shelter','volcano','compass','orbital','quantum','century','thunder'
   ],
   expert: [
-    'adventure','beautiful','celebrate','different','elaborate','fantastic','geography',
-    'highlight','important','javascript','knowledge','landscape','mechanism','necessary',
-    'objective','parameter','qualified','reasoning','systematic','technical','universal',
-    'valentine','wondering','xylophone','yesterday','algorithm','bootstrap','character',
-    'dimension','forbidden','guarantee','halloween','invisible','jellyfish','overflow',
-    'provision','satellite','translate','volunteer','worldwide'
+    'adventure','butterfly','telescope','champion','expedition','laboratory',
+    'parliament','understand','microphone','calculator','independent',
+    'extraordinary','constellation','revolutionary','philosophical',
+    'architecture','environment','civilization','perseverance','accomplishment',
+    'magnificent','destination','examination','impossible','transformation'
   ]
 };
 
-const SPECIAL_WORDS = ['BONUS','SLOW','SHIELD','BOMB'];
+const SPECIAL_POOL = [
+  { text: 'BONUS',  color: '#ffd700', type: 'bonus'  },
+  { text: 'SLOW',   color: '#60a5fa', type: 'slow'   },
+  { text: 'SHIELD', color: '#c084fc', type: 'shield' },
+  { text: 'BOMB',   color: '#f87171', type: 'bomb'   },
+];
 
-// ─────────────────────────────────────────────
-//  CANVAS & RESIZE
-// ─────────────────────────────────────────────
+// ================================================================
+//  WAVE CONFIG  (12 waves)
+// ================================================================
+const WAVE_CFG = [
+  null,
+  { pool: 'easy',   spawnMs: 3000, speed: 40 },
+  { pool: 'easy',   spawnMs: 2800, speed: 45 },
+  { pool: 'easy',   spawnMs: 2500, speed: 50 },
+  { pool: 'medium', spawnMs: 2000, speed: 60 },
+  { pool: 'medium', spawnMs: 1800, speed: 65 },
+  { pool: 'medium', spawnMs: 1600, speed: 70 },
+  { pool: 'hard',   spawnMs: 1500, speed: 80 },
+  { pool: 'hard',   spawnMs: 1300, speed: 85 },
+  { pool: 'hard',   spawnMs: 1200, speed: 90 },
+  { pool: 'expert', spawnMs: 1000, speed: 100 },
+  { pool: 'expert', spawnMs:  900, speed: 110 },
+  { pool: 'expert', spawnMs:  800, speed: 120 },
+];
+const MAX_WAVE = 12;
+const WORDS_PER_WAVE = 12;
+const DANGER_Y = 350;
+const MAX_WORDS = 8;
+
+// ================================================================
+//  CANVAS
+// ================================================================
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
+const W = 600, H = 480;
 
-let W = 0, H = 0;
-const SKYLINE_H = 90; // height of city skyline area at bottom
-
-function resize() {
-  const wrapper = document.getElementById('gameWrapper');
-  W = wrapper.clientWidth;
-  H = wrapper.clientHeight;
-  canvas.width = W;
-  canvas.height = H;
-}
-window.addEventListener('resize', () => { resize(); generateSkyline(); });
-resize();
-
-// ─────────────────────────────────────────────
-//  SKYLINE DATA
-// ─────────────────────────────────────────────
-let buildings = [];
-let buildingDamage = 0; // 0-5
-
-function generateSkyline() {
-  buildings = [];
-  const baseY = H - 40; // bottom bar
-  let x = 0;
-  while (x < W) {
-    const w = 28 + Math.random() * 55 | 0;
-    const h = 40 + Math.random() * 80 | 0;
-    const floors = Math.ceil(h / 14);
-    const winCols = Math.max(1, (w - 8) / 12 | 0);
-    buildings.push({ x, y: baseY - h, w, h, floors, winCols });
-    x += w + 2;
-  }
-}
-generateSkyline();
-
-// ─────────────────────────────────────────────
-//  STARS
-// ─────────────────────────────────────────────
-const stars = Array.from({ length: 120 }, () => ({
-  x: Math.random(),
-  y: Math.random() * 0.65,
-  r: 0.5 + Math.random() * 1.2,
-  alpha: 0.3 + Math.random() * 0.7,
-  twinkleSpeed: 0.5 + Math.random() * 2,
-  twinkleOffset: Math.random() * Math.PI * 2
-}));
-
-// ─────────────────────────────────────────────
+// ================================================================
 //  GAME STATE
-// ─────────────────────────────────────────────
-const MAX_WAVES = 12;
-let state = 'start'; // start | playing | wave_break | gameover
+// ================================================================
+let STATE = 'menu';
 let score = 0;
 let lives = 5;
 let wave = 1;
 let combo = 0;
 let maxCombo = 0;
-let wordsTyped = 0;
-let wordsEscaped = 0;
-let shieldActive = false;
-let shieldTimer = 0;
+let wordsCompleted = 0;
+let wordsMissed = 0;
+let gameStartTime = 0;
+let lastSpawnTime = 0;
+let wordsSpawnedThisWave = 0;
 let slowActive = false;
-let slowTimer = 0;
-let waveTimer = 0;     // seconds remaining in wave
-let waveBreakTimer = 0;
-let fallingWords = [];
+let slowEnd = 0;
+let shieldActive = false;
+let shieldEnd = 0;
+let redFlashEnd = 0;
+let buildings = [];
+let activeWords = [];
 let particles = [];
-let flashes = [];      // screen flash effects
-let targetIndex = -1;  // index in fallingWords of targeted word
-let typedSoFar = '';   // current typed prefix
+let targetedWord = null;
+let typedSoFar = '';
+let lastFrameTime = 0;
+let animFrame = null;
+let gameSeed = 0;
+// Wave pause state
+let wavePauseUntil = 0;
 
-// WPM tracking
-let wpmWords = [];     // timestamps of completed words
-let bestWpm = 0;
-let lastTime = 0;
-
-// Spawn tracking
-let spawnAccum = 0;
-let spawnInterval = 3.0;
-
-const WAVE_DURATION = 30; // seconds per wave
-
-// ─────────────────────────────────────────────
-//  WORD POOL FOR CURRENT DIFFICULTY
-// ─────────────────────────────────────────────
-function getWordPool(w) {
-  if (w <= 3) return WORDS.easy;
-  if (w <= 6) return WORDS.medium;
-  if (w <= 9) return WORDS.hard;
-  return WORDS.expert;
+// ================================================================
+//  SEEDED PSEUDO-RANDOM (for consistent buildings per game)
+// ================================================================
+function makePrng(seed) {
+  let s = seed | 0;
+  return function () {
+    s = (Math.imul(s, 1664525) + 1013904223) | 0;
+    return ((s >>> 0) / 0x100000000);
+  };
 }
 
-function pickWord(w) {
-  // 8% chance of special word after wave 1
-  if (w > 1 && Math.random() < 0.08) {
-    return SPECIAL_WORDS[Math.random() * SPECIAL_WORDS.length | 0];
+// ================================================================
+//  BUILDING GENERATION
+// ================================================================
+function generateBuildings(seed) {
+  const rng = makePrng(seed);
+  const buildings = [];
+  const count = 7;
+  let x = 10;
+
+  for (let i = 0; i < count; i++) {
+    const bw = Math.floor(rng() * 30 + 55);   // 55-85
+    const bh = Math.floor(rng() * 70 + 60);   // 60-130
+    const bx = x;
+    const by = H - bh - 30;
+
+    // Windows grid
+    const wins = [];
+    const cols = Math.max(1, Math.floor((bw - 12) / 14));
+    const rows = Math.max(1, Math.floor((bh - 12) / 18));
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        wins.push({
+          x: bx + 6 + c * 14,
+          y: by + 8 + r * 18,
+          lit: rng() > 0.25,
+        });
+      }
+    }
+    buildings.push({ x: bx, y: by, w: bw, h: bh, windows: wins });
+    x += bw + Math.floor(rng() * 12 + 4);
   }
-  const pool = getWordPool(w);
-  return pool[Math.random() * pool.length | 0];
+
+  // Scale so they span the canvas width
+  const totalUsed = x - 10;
+  const scale = (W - 20) / totalUsed;
+  for (const b of buildings) {
+    b.x = 10 + (b.x - 10) * scale;
+    b.w = b.w * scale;
+    for (const w of b.windows) {
+      w.x = 10 + (w.x - 10) * scale;
+    }
+  }
+  return buildings;
 }
 
-function wordBaseSpeed(w) {
-  // pixels per second
-  return 18 + w * 7;
-}
-
-function getWordColor(word) {
-  const up = word.toUpperCase();
-  if (up === 'BONUS') return '#ffd700';
-  if (up === 'SLOW')  return '#5bc8fa';
-  if (up === 'SHIELD') return '#bf7fff';
-  if (up === 'BOMB')  return '#ff5555';
-  return null; // default (use glow tier)
+// ================================================================
+//  SPAWNING
+// ================================================================
+function pickWord(waveNum) {
+  // 5% chance of special word
+  if (Math.random() < 0.05) {
+    const s = SPECIAL_POOL[Math.floor(Math.random() * SPECIAL_POOL.length)];
+    return { text: s.text, special: s.type, baseColor: s.color };
+  }
+  const cfg = WAVE_CFG[waveNum];
+  const pool = WORDS[cfg.pool];
+  return { text: pool[Math.floor(Math.random() * pool.length)], special: null, baseColor: '#e8e8f0' };
 }
 
 function spawnWord() {
-  const word = pickWord(wave);
-  const margin = 60;
-  const x = margin + Math.random() * (W - margin * 2);
-  const speed = wordBaseSpeed(wave) * (0.75 + Math.random() * 0.5);
-  const specialColor = getWordColor(word);
-  const isSpecial = SPECIAL_WORDS.includes(word.toUpperCase());
-  fallingWords.push({
-    word,
-    x,
-    y: -18,
+  if (activeWords.length >= MAX_WORDS) return;
+  if (wordsSpawnedThisWave >= WORDS_PER_WAVE) return;
+
+  const { text, special, baseColor } = pickWord(wave);
+  ctx.font = 'bold 15px monospace';
+  const tw = ctx.measureText(text).width;
+  const x = Math.random() * (W - tw - 30) + tw / 2 + 10;
+
+  const cfg = WAVE_CFG[wave];
+  let speed = cfg.speed;
+  if (slowActive) speed *= 0.5;
+
+  activeWords.push({
+    text, special, baseColor,
+    x, y: 15,
     speed,
-    typed: 0,          // number of chars correctly typed
-    shaking: 0,        // shake timer
-    shakeAmt: 0,
-    special: isSpecial,
-    color: specialColor,
-    id: Math.random()
+    typed: 0,
+    flash: 0,
   });
+  wordsSpawnedThisWave++;
+  lastSpawnTime = performance.now();
 }
 
-// ─────────────────────────────────────────────
-//  PARTICLES / EXPLOSIONS
-// ─────────────────────────────────────────────
-function spawnExplosion(x, y, color) {
-  const col = color || '#7c5cfc';
-  const count = 18 + Math.random() * 12 | 0;
-  for (let i = 0; i < count; i++) {
-    const angle = Math.random() * Math.PI * 2;
-    const speed = 40 + Math.random() * 120;
+// ================================================================
+//  PARTICLES
+// ================================================================
+function burst(x, y, color) {
+  const n = 6 + (Math.random() * 3 | 0);
+  for (let i = 0; i < n; i++) {
+    const a = (Math.PI * 2 * i / n) + (Math.random() - 0.5) * 0.6;
+    const v = 70 + Math.random() * 90;
     particles.push({
       x, y,
-      vx: Math.cos(angle) * speed,
-      vy: Math.sin(angle) * speed,
-      life: 0.6 + Math.random() * 0.5,
-      maxLife: 0,
-      size: 2 + Math.random() * 4,
-      color: col
+      vx: Math.cos(a) * v,
+      vy: Math.sin(a) * v - 30,
+      color,
+      life: 0.45 + Math.random() * 0.25,
+      maxLife: 0.45 + Math.random() * 0.25,
+      r: 2.5 + Math.random() * 2.5,
     });
-    particles[particles.length - 1].maxLife = particles[particles.length - 1].life;
   }
 }
 
-function spawnImpact(x, y) {
-  // red flash when word hits bottom
-  flashes.push({ x, y, life: 0.5, maxLife: 0.5, type: 'impact' });
-  for (let i = 0; i < 10; i++) {
-    const angle = -Math.PI + Math.random() * Math.PI;
-    const speed = 30 + Math.random() * 60;
-    particles.push({
-      x, y,
-      vx: Math.cos(angle) * speed,
-      vy: Math.sin(angle) * speed - 30,
-      life: 0.4 + Math.random() * 0.3,
-      maxLife: 0,
-      size: 2 + Math.random() * 3,
-      color: '#ff4444'
-    });
-    particles[particles.length - 1].maxLife = particles[particles.length - 1].life;
+// ================================================================
+//  DRAWING
+// ================================================================
+function drawBackground() {
+  const grad = ctx.createLinearGradient(0, 0, 0, H - 30);
+  grad.addColorStop(0, '#030307');
+  grad.addColorStop(1, '#0d0d1a');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H - 30);
+}
+
+function drawStars() {
+  const rng = makePrng(gameSeed + 777);
+  ctx.fillStyle = 'rgba(232,232,240,0.7)';
+  for (let i = 0; i < 45; i++) {
+    const sx = rng() * W;
+    const sy = rng() * (H * 0.55);
+    const sr = rng() * 1.3 + 0.3;
+    ctx.beginPath();
+    ctx.arc(sx, sy, sr, 0, Math.PI * 2);
+    ctx.fill();
   }
 }
 
-// ─────────────────────────────────────────────
-//  HUD UPDATES
-// ─────────────────────────────────────────────
+function drawGround() {
+  ctx.fillStyle = '#1a1a24';
+  ctx.fillRect(0, H - 30, W, 30);
+  ctx.fillStyle = '#222233';
+  ctx.fillRect(0, H - 30, W, 2);
+}
+
+function drawBuildings() {
+  const livesLost = 5 - lives;
+  for (let i = 0; i < buildings.length; i++) {
+    const b = buildings[i];
+    const isDark = i < livesLost;
+
+    ctx.fillStyle = isDark ? '#161620' : '#252535';
+    ctx.fillRect(b.x, b.y, b.w, b.h);
+    ctx.fillStyle = isDark ? '#1c1c2a' : '#303045';
+    ctx.fillRect(b.x, b.y, b.w, 5);
+
+    for (const w of b.windows) {
+      if (isDark || !w.lit) {
+        ctx.fillStyle = 'rgba(20,20,32,0.9)';
+      } else {
+        const flick = Math.random() > 0.998;
+        ctx.fillStyle = flick ? 'rgba(180,130,30,0.5)' : 'rgba(255,215,80,0.88)';
+      }
+      ctx.fillRect(w.x, w.y, 8, 6);
+    }
+  }
+}
+
+function drawDangerLine() {
+  ctx.save();
+  ctx.globalAlpha = 0.25;
+  ctx.strokeStyle = '#ff4444';
+  ctx.setLineDash([8, 7]);
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, DANGER_Y);
+  ctx.lineTo(W, DANGER_Y);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+}
+
+function drawWord(word) {
+  const { text, typed, flash, x, y, baseColor, special } = word;
+  const isTarget = word === targetedWord;
+  const fontSize = 15;
+  ctx.font = `bold ${fontSize}px monospace`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  const typedPart = text.slice(0, typed);
+  const remainPart = text.slice(typed);
+  const fullW = ctx.measureText(text).width;
+  let cx = x - fullW / 2;
+
+  ctx.save();
+
+  if (flash > 0) {
+    // Wrong-key flash: whole word red
+    ctx.shadowColor = '#ff2222';
+    ctx.shadowBlur = 22;
+    ctx.fillStyle = '#ff5555';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, x - fullW / 2, y);
+  } else {
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+
+    // Typed portion (bright green)
+    if (typedPart.length > 0) {
+      ctx.shadowColor = '#22c55e';
+      ctx.shadowBlur = isTarget ? 14 : 8;
+      ctx.fillStyle = '#4ade80';
+      ctx.fillText(typedPart, cx, y);
+      cx += ctx.measureText(typedPart).width;
+    }
+
+    // Remaining portion
+    if (isTarget) {
+      ctx.shadowColor = '#aaaaff';
+      ctx.shadowBlur = 14;
+      ctx.fillStyle = '#ffffff';
+    } else {
+      ctx.shadowColor = baseColor;
+      ctx.shadowBlur = 8;
+      ctx.fillStyle = baseColor;
+    }
+    ctx.fillText(remainPart, cx, y);
+  }
+
+  ctx.restore();
+
+  // Red warning outline near danger line
+  if (y > 270) {
+    ctx.save();
+    ctx.globalAlpha = Math.min(1, (y - 270) / 80) * 0.55;
+    ctx.strokeStyle = '#ff3333';
+    ctx.lineWidth = 1.5;
+    const pad = 5;
+    ctx.strokeRect(x - fullW / 2 - pad, y - fontSize / 2 - pad, fullW + pad * 2, fontSize + pad * 2);
+    ctx.restore();
+  }
+}
+
+function drawParticles(dt) {
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    p.vy += 150 * dt;
+    p.life -= dt;
+    if (p.life <= 0) { particles.splice(i, 1); continue; }
+    const a = p.life / p.maxLife;
+    ctx.save();
+    ctx.globalAlpha = a;
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r * a + 1, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
+function drawShieldEffect() {
+  if (!shieldActive) return;
+  ctx.save();
+  ctx.globalAlpha = 0.07;
+  ctx.fillStyle = '#c084fc';
+  ctx.fillRect(0, 0, W, H);
+  ctx.globalAlpha = 0.45;
+  ctx.strokeStyle = '#c084fc';
+  ctx.lineWidth = 3;
+  ctx.shadowBlur = 10;
+  ctx.shadowColor = '#c084fc';
+  ctx.strokeRect(2, 2, W - 4, H - 4);
+  ctx.restore();
+}
+
+function drawRedFlash(now) {
+  if (now >= redFlashEnd) return;
+  const t = (redFlashEnd - now) / 300;
+  ctx.save();
+  ctx.globalAlpha = t * 0.4;
+  ctx.fillStyle = '#ff0000';
+  ctx.fillRect(0, 0, W, H);
+  ctx.restore();
+}
+
+function drawWavePause(now) {
+  if (STATE !== 'wavePause') return;
+
+  ctx.save();
+  ctx.globalAlpha = 0.7;
+  ctx.fillStyle = '#0f0f13';
+  ctx.fillRect(0, 0, W, H);
+  ctx.restore();
+
+  const prev = wave - 1;
+  ctx.save();
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = 'bold 38px Segoe UI, system-ui, sans-serif';
+  ctx.shadowBlur = 24;
+  ctx.shadowColor = '#7c5cfc';
+  ctx.fillStyle = '#7c5cfc';
+  ctx.fillText(`Wave ${prev} Complete!`, W / 2, H / 2 - 24);
+  ctx.font = '20px Segoe UI, system-ui, sans-serif';
+  ctx.fillStyle = '#e8e8f0';
+  ctx.shadowBlur = 0;
+  const remaining = Math.ceil((wavePauseUntil - now) / 1000);
+  ctx.fillText(`Wave ${wave} incoming in ${remaining}...`, W / 2, H / 2 + 22);
+  ctx.restore();
+}
+
+// ================================================================
+//  HUD
+// ================================================================
+function comboMult() {
+  if (combo >= 10) return 5;
+  if (combo >= 5)  return 3;
+  if (combo >= 3)  return 2;
+  return 1;
+}
+
 function updateHUD() {
-  document.getElementById('scoreVal').textContent = score.toLocaleString();
-  document.getElementById('waveLabel').textContent = wave;
+  document.getElementById('scoreDisplay').textContent = score.toLocaleString();
+  document.getElementById('waveDisplay').textContent = wave;
+  document.getElementById('livesDisplay').textContent = '❤️'.repeat(Math.max(0, lives));
 
-  // Lives hearts
-  const livesEl = document.getElementById('livesDisplay');
-  livesEl.innerHTML = '';
-  for (let i = 0; i < 5; i++) {
-    const h = document.createElement('span');
-    h.className = 'heart' + (i >= lives ? ' lost' : '');
-    h.textContent = '♥';
-    h.style.color = i < lives ? '#ff6b6b' : '#444';
-    livesEl.appendChild(h);
-  }
+  const elapsed = (performance.now() - gameStartTime) / 60000;
+  const wpm = elapsed > 0.02 ? Math.round(wordsCompleted / elapsed) : 0;
+  document.getElementById('wpmDisplay').textContent = wpm;
 
-  // Combo
   const comboEl = document.getElementById('comboDisplay');
-  if (combo >= 2) {
-    comboEl.textContent = `${combo}x COMBO`;
+  if (combo >= 3) {
+    comboEl.textContent = `${combo}× (${comboMult()}x)`;
   } else {
     comboEl.textContent = '';
   }
 
-  // Accuracy
-  const total = wordsTyped + wordsEscaped;
-  const acc = total > 0 ? Math.round(wordsTyped / total * 100) : null;
-  document.getElementById('accuracyVal').textContent = acc !== null ? `${acc}%` : '—';
-
-  // WPM (rolling 60s)
-  const now = performance.now();
-  wpmWords = wpmWords.filter(t => now - t < 60000);
-  const wpm = wpmWords.length;
-  if (wpm > bestWpm) bestWpm = wpm;
-  document.getElementById('wpmVal').textContent = wpm > 0 ? `${wpm}` : '—';
-
-  // Typing display
-  const td = document.getElementById('typingDisplay');
-  if (typedSoFar) {
-    td.textContent = typedSoFar;
-  } else {
-    td.innerHTML = '&nbsp;';
-  }
-
-  // Shield glow
-  const sf = document.getElementById('shieldFlash');
-  sf.style.opacity = shieldActive ? '1' : '0';
+  document.getElementById('typedText').textContent = typedSoFar;
 }
 
-// ─────────────────────────────────────────────
-//  TARGETING LOGIC
-// ─────────────────────────────────────────────
-function findTarget(firstChar) {
-  // Find first word starting with firstChar (case-insensitive)
-  const ch = firstChar.toLowerCase();
-  for (let i = 0; i < fallingWords.length; i++) {
-    if (fallingWords[i].word[0].toLowerCase() === ch) {
-      return i;
-    }
-  }
-  return -1;
-}
+// ================================================================
+//  INPUT HANDLING  — keydown only, no focus required
+// ================================================================
+document.addEventListener('keydown', handleKey);
 
-function switchTarget() {
-  // Tab: cycle to next word starting with same first letter
-  if (targetIndex < 0 || !typedSoFar) return;
-  const fc = fallingWords[targetIndex].word[0].toLowerCase();
-  for (let i = 1; i <= fallingWords.length; i++) {
-    const idx = (targetIndex + i) % fallingWords.length;
-    if (fallingWords[idx].word[0].toLowerCase() === fc) {
-      // Reset progress on old target
-      fallingWords[targetIndex].typed = 0;
-      targetIndex = idx;
-      typedSoFar = fc;
-      fallingWords[targetIndex].typed = 1;
-      return;
-    }
-  }
-}
+function handleKey(e) {
+  if (STATE !== 'playing') return;
+  if (e.ctrlKey || e.metaKey || e.altKey) return;
 
-function destroyWord(idx) {
-  const fw = fallingWords[idx];
-  const isSpecial = fw.special;
-  const up = fw.word.toUpperCase();
-  let pts = 0;
+  const key = e.key;
 
-  if (!isSpecial) {
-    const speedMult = fw.speed / wordBaseSpeed(wave);
-    pts = fw.word.length * Math.round(speedMult * 10) / 10 * wave;
-    pts = Math.round(pts * Math.min(combo + 1, 5) * 0.5 + pts * 0.5);
-  }
-
-  if (up === 'BONUS') {
-    pts = 50;
-    spawnExplosion(fw.x, fw.y, '#ffd700');
-  } else if (up === 'SLOW') {
-    slowActive = true;
-    slowTimer = 5;
-    spawnExplosion(fw.x, fw.y, '#5bc8fa');
-  } else if (up === 'SHIELD') {
-    shieldActive = true;
-    shieldTimer = 8;
-    spawnExplosion(fw.x, fw.y, '#bf7fff');
-  } else if (up === 'BOMB') {
-    // Destroy all non-special words
-    const toDestroy = fallingWords.filter((w, i) => i !== idx && !w.special);
-    toDestroy.forEach(w => {
-      pts += w.word.length * wave;
-      spawnExplosion(w.x, w.y, '#ff5555');
-    });
-    fallingWords = fallingWords.filter((w, i) => i === idx || w.special);
-    spawnExplosion(fw.x, fw.y, '#ff5555');
-  } else {
-    spawnExplosion(fw.x, fw.y, '#7c5cfc');
-  }
-
-  score += pts;
-  wordsTyped++;
-  combo++;
-  if (combo > maxCombo) maxCombo = combo;
-  wpmWords.push(performance.now());
-
-  fallingWords.splice(idx, 1);
-  targetIndex = -1;
-  typedSoFar = '';
-}
-
-// ─────────────────────────────────────────────
-//  KEYBOARD HANDLING
-// ─────────────────────────────────────────────
-document.addEventListener('keydown', e => {
-  if (state !== 'playing') {
-    if ((state === 'start' || state === 'gameover') && e.key === 'Enter') {
-      startGame();
-    }
-    return;
-  }
-
-  if (e.key === 'Tab') {
-    e.preventDefault();
-    switchTarget();
-    updateHUD();
-    return;
-  }
-  if (e.key === 'Escape') {
-    if (targetIndex >= 0) {
-      fallingWords[targetIndex].typed = 0;
-    }
-    targetIndex = -1;
+  if (key === 'Backspace') {
+    targetedWord = null;
     typedSoFar = '';
     updateHUD();
     return;
   }
 
-  // Only handle printable single characters (letters)
-  if (e.key.length !== 1 || e.ctrlKey || e.altKey || e.metaKey) return;
-  if (!/[a-zA-Z]/.test(e.key)) return;
+  // Only single printable characters
+  if (key.length !== 1) return;
+  const ch = key.toLowerCase();
 
-  const ch = e.key.toLowerCase();
-
-  if (targetIndex < 0 || typedSoFar === '') {
-    // Find a new target
-    const idx = findTarget(ch);
-    if (idx >= 0) {
-      targetIndex = idx;
-      typedSoFar = ch;
-      fallingWords[idx].typed = 1;
-      // If single-char word, destroy immediately
-      if (fallingWords[idx].word.length === 1) {
-        destroyWord(idx);
+  if (!targetedWord) {
+    // Auto-target: first char match, pick most dangerous (largest y)
+    let best = null;
+    for (const w of activeWords) {
+      if (w.text[0].toLowerCase() === ch) {
+        if (!best || w.y > best.y) best = w;
       }
     }
-  } else {
-    // Advance current target
-    const fw = fallingWords[targetIndex];
-    const expected = fw.word[fw.typed].toLowerCase();
-    if (ch === expected) {
-      fw.typed++;
-      typedSoFar += ch;
-      if (fw.typed >= fw.word.length) {
-        destroyWord(targetIndex);
-      }
-    } else {
-      // Wrong key — shake the word
-      fw.shaking = 0.3;
-      fw.shakeAmt = 5;
+    if (best) {
+      targetedWord = best;
+      targetedWord.typed = 1;
+      typedSoFar = best.text[0];
     }
-  }
-  updateHUD();
-});
-
-// ─────────────────────────────────────────────
-//  GAME FLOW
-// ─────────────────────────────────────────────
-function startGame() {
-  score = 0;
-  lives = 5;
-  wave = 1;
-  combo = 0;
-  maxCombo = 0;
-  wordsTyped = 0;
-  wordsEscaped = 0;
-  shieldActive = false;
-  shieldTimer = 0;
-  slowActive = false;
-  slowTimer = 0;
-  waveTimer = WAVE_DURATION;
-  fallingWords = [];
-  particles = [];
-  flashes = [];
-  targetIndex = -1;
-  typedSoFar = '';
-  buildingDamage = 0;
-  wpmWords = [];
-  bestWpm = 0;
-  spawnAccum = 0;
-  spawnInterval = Math.max(0.5, 3 - wave * 0.2);
-
-  document.getElementById('startOverlay').classList.add('hidden');
-  document.getElementById('gameOverOverlay').classList.add('hidden');
-  document.getElementById('waveBreakOverlay').classList.add('hidden');
-  state = 'playing';
-  lastTime = performance.now();
-  requestAnimationFrame(gameLoop);
-  updateHUD();
-}
-
-function endWave() {
-  // Save typed/escaped before wave break
-  const overlay = document.getElementById('waveBreakOverlay');
-  document.getElementById('waveBreakTitle').textContent = `Wave ${wave} Complete!`;
-  document.getElementById('wbScore').textContent = score.toLocaleString();
-  document.getElementById('wbWords').textContent = wordsTyped;
-  overlay.classList.remove('hidden');
-  state = 'wave_break';
-  waveBreakTimer = 3;
-  fallingWords = [];
-  targetIndex = -1;
-  typedSoFar = '';
-}
-
-function startNextWave() {
-  wave++;
-  if (wave > MAX_WAVES) {
-    // Victory — treat as high-score game over
-    triggerGameOver();
+    updateHUD();
     return;
   }
-  document.getElementById('waveBreakOverlay').classList.add('hidden');
-  waveTimer = WAVE_DURATION;
-  spawnAccum = 0;
-  spawnInterval = Math.max(0.5, 3 - wave * 0.2);
-  state = 'playing';
+
+  // Continue on targeted word
+  const expected = targetedWord.text[targetedWord.typed];
+  if (!expected) return; // shouldn't happen
+
+  if (ch === expected.toLowerCase()) {
+    targetedWord.typed++;
+    typedSoFar += expected;
+
+    if (targetedWord.typed >= targetedWord.text.length) {
+      completeWord(targetedWord);
+    }
+  } else {
+    targetedWord.flash = 0.22;
+  }
+
   updateHUD();
 }
 
-function triggerGameOver() {
-  state = 'gameover';
-  fallingWords = [];
-  targetIndex = -1;
+// ================================================================
+//  WORD COMPLETE / MISS
+// ================================================================
+function completeWord(word) {
+  combo++;
+  if (combo > maxCombo) maxCombo = combo;
+  wordsCompleted++;
+
+  const mult = comboMult();
+  const gained = Math.floor(word.text.length * wave * (1 + mult * 0.5));
+  score += gained;
+
+  if (word.special === 'bonus') {
+    score += 50;
+  } else if (word.special === 'slow') {
+    slowActive = true;
+    slowEnd = performance.now() + 5000;
+    for (const w of activeWords) w.speed *= 0.5;
+  } else if (word.special === 'shield') {
+    shieldActive = true;
+    shieldEnd = performance.now() + 5000;
+  } else if (word.special === 'bomb') {
+    // Destroy all other words
+    const others = activeWords.filter(w => w !== word);
+    for (const ow of others) {
+      burst(ow.x, ow.y, ow.baseColor);
+      score += Math.floor(ow.text.length * wave);
+      wordsCompleted++;
+    }
+    activeWords = [];
+  }
+
+  burst(word.x, word.y, word.special ? word.baseColor : '#4ade80');
+  removeWord(word);
+  targetedWord = null;
   typedSoFar = '';
+}
 
-  const total = wordsTyped + wordsEscaped;
-  const acc = total > 0 ? Math.round(wordsTyped / total * 100) : 0;
+function missWord(word) {
+  const impactY = DANGER_Y + 10;
 
-  document.getElementById('goScore').textContent = score.toLocaleString();
-  document.getElementById('goWave').textContent = wave;
-  document.getElementById('goAccuracy').textContent = acc + '%';
-  document.getElementById('goWpm').textContent = bestWpm;
-  document.getElementById('gameOverOverlay').classList.remove('hidden');
+  if (shieldActive) {
+    burst(word.x, impactY, '#c084fc');
+    wordsMissed++;
+    removeWord(word);
+    if (word === targetedWord) { targetedWord = null; typedSoFar = ''; }
+    return;
+  }
+
+  lives = Math.max(0, lives - 1);
+  wordsMissed++;
+  combo = 0;
+  redFlashEnd = performance.now() + 300;
+  burst(word.x, impactY, '#ff4444');
+  removeWord(word);
+  if (word === targetedWord) { targetedWord = null; typedSoFar = ''; }
+}
+
+function removeWord(word) {
+  const idx = activeWords.indexOf(word);
+  if (idx !== -1) activeWords.splice(idx, 1);
+}
+
+// ================================================================
+//  WAVE MANAGEMENT
+// ================================================================
+function checkWaveComplete() {
+  if (wordsSpawnedThisWave >= WORDS_PER_WAVE && activeWords.length === 0) {
+    if (wave >= MAX_WAVE) {
+      endGame(true);
+    } else {
+      STATE = 'wavePause';
+      wave++;
+      wordsSpawnedThisWave = 0;
+      wavePauseUntil = performance.now() + 3000;
+      updateHUD();
+    }
+  }
+}
+
+// ================================================================
+//  MAIN GAME LOOP
+// ================================================================
+function gameLoop(now) {
+  const dt = Math.min((now - lastFrameTime) / 1000, 0.05);
+  lastFrameTime = now;
+
+  // Timer expirations
+  if (slowActive && now >= slowEnd) {
+    slowActive = false;
+    // Restore base speed for active words
+    for (const w of activeWords) w.speed = WAVE_CFG[wave].speed;
+  }
+  if (shieldActive && now >= shieldEnd) shieldActive = false;
+
+  // --- DRAW ---
+  ctx.clearRect(0, 0, W, H);
+  drawBackground();
+  drawStars();
+  drawGround();
+  drawBuildings();
+  drawDangerLine();
+
+  if (STATE === 'playing') {
+    // Spawn
+    const cfg = WAVE_CFG[wave];
+    if (wordsSpawnedThisWave < WORDS_PER_WAVE && now - lastSpawnTime >= cfg.spawnMs) {
+      spawnWord();
+    }
+
+    // Move and draw words
+    for (let i = activeWords.length - 1; i >= 0; i--) {
+      const w = activeWords[i];
+      w.y += w.speed * dt;
+      if (w.flash > 0) w.flash -= dt;
+
+      if (w.y >= DANGER_Y) {
+        missWord(w);
+        continue;
+      }
+      drawWord(w);
+    }
+
+    // Draw remaining (in case any survived)
+    // (already drawn above in loop, this is fine)
+
+    checkWaveComplete();
+
+  } else if (STATE === 'wavePause') {
+    // Draw frozen words (don't move them)
+    for (const w of activeWords) drawWord(w);
+    drawWavePause(now);
+
+    if (now >= wavePauseUntil) {
+      STATE = 'playing';
+      lastSpawnTime = performance.now();
+      updateHUD();
+    }
+  }
+
+  drawParticles(dt);
+  drawShieldEffect();
+  drawRedFlash(now);
+
+  if (STATE === 'playing' || STATE === 'wavePause') updateHUD();
+
+  if (lives <= 0 && STATE === 'playing') {
+    endGame(false);
+    return;
+  }
+
+  animFrame = requestAnimationFrame(gameLoop);
+}
+
+// ================================================================
+//  GAME START / END
+// ================================================================
+function startGame() {
+  // Reset
+  score = 0; lives = 5; wave = 1;
+  combo = 0; maxCombo = 0;
+  wordsCompleted = 0; wordsMissed = 0;
+  gameStartTime = performance.now();
+  lastSpawnTime = performance.now() - 9999; // spawn immediately
+  wordsSpawnedThisWave = 0;
+  slowActive = false; shieldActive = false;
+  redFlashEnd = 0;
+  activeWords = []; particles = [];
+  targetedWord = null; typedSoFar = '';
+  gameSeed = (Math.random() * 1e9) | 0;
+  buildings = generateBuildings(gameSeed);
+
+  document.getElementById('overlay').classList.add('hidden');
+  document.getElementById('typedText').textContent = '';
+
+  STATE = 'playing';
+  lastFrameTime = performance.now();
+  updateHUD();
+
+  if (animFrame) cancelAnimationFrame(animFrame);
+  animFrame = requestAnimationFrame(gameLoop);
+}
+
+function endGame(won) {
+  STATE = won ? 'win' : 'gameOver';
+  if (animFrame) { cancelAnimationFrame(animFrame); animFrame = null; }
+
+  // Draw one last frame
+  ctx.clearRect(0, 0, W, H);
+  drawBackground(); drawStars(); drawGround(); drawBuildings();
+
+  const elapsed = (performance.now() - gameStartTime) / 60000;
+  const finalWPM = elapsed > 0.02 ? Math.round(wordsCompleted / elapsed) : 0;
+  const total = wordsCompleted + wordsMissed;
+  const acc = total > 0 ? Math.round((wordsCompleted / total) * 100) : 100;
 
   window.dispatchEvent(new CustomEvent('gameOver', {
     detail: { game: 'typing-terror', score }
   }));
+
+  const overlay = document.getElementById('overlay');
+  overlay.classList.remove('hidden');
+
+  document.getElementById('overlayTitle').textContent = won ? 'City Defended!' : 'City Destroyed!';
+  document.getElementById('overlaySubtitle').textContent = won
+    ? 'All 12 waves defeated — your city stands tall!'
+    : `You reached Wave ${wave}. Practice makes perfect!`;
+
+  const scoreEl = document.getElementById('overlayScore');
+  scoreEl.style.display = '';
+  scoreEl.textContent = score.toLocaleString() + ' pts';
+
+  const statsEl = document.getElementById('overlayStats');
+  statsEl.innerHTML = `
+    <span class="s-label">WPM</span><span class="s-value">${finalWPM}</span>
+    <span class="s-label">Accuracy</span><span class="s-value">${acc}%</span>
+    <span class="s-label">Words Typed</span><span class="s-value">${wordsCompleted}</span>
+    <span class="s-label">Best Combo</span><span class="s-value">${maxCombo}x</span>
+    <span class="s-label">Wave Reached</span><span class="s-value">${wave} / ${MAX_WAVE}</span>
+  `;
+
+  document.getElementById('overlayBtn').textContent = 'Play Again';
 }
 
-// ─────────────────────────────────────────────
-//  UPDATE
-// ─────────────────────────────────────────────
-function update(dt) {
-  if (state === 'wave_break') {
-    waveBreakTimer -= dt;
-    const sec = Math.ceil(Math.max(0, waveBreakTimer));
-    document.getElementById('waveBreakCountdown').textContent =
-      sec > 0 ? `Next wave in ${sec}…` : 'Go!';
-    if (waveBreakTimer <= 0) startNextWave();
-    return;
-  }
+document.getElementById('overlayBtn').addEventListener('click', startGame);
 
-  if (state !== 'playing') return;
-
-  // Timers
-  if (shieldActive) {
-    shieldTimer -= dt;
-    if (shieldTimer <= 0) { shieldActive = false; shieldTimer = 0; }
-  }
-  if (slowActive) {
-    slowTimer -= dt;
-    if (slowTimer <= 0) { slowActive = false; slowTimer = 0; }
-  }
-
-  const speedMult = slowActive ? 0.5 : 1.0;
-  const groundY = H - 40 - 8; // just above input bar
-
-  // Update falling words
-  const toRemove = [];
-  for (let i = 0; i < fallingWords.length; i++) {
-    const fw = fallingWords[i];
-    fw.y += fw.speed * speedMult * dt;
-
-    if (fw.shaking > 0) {
-      fw.shaking -= dt;
-      if (fw.shaking < 0) fw.shaking = 0;
-    }
-
-    // Hit ground
-    if (fw.y >= groundY) {
-      if (!shieldActive) {
-        lives--;
-        buildingDamage = Math.min(5, buildingDamage + 1);
-        spawnImpact(fw.x, groundY);
-        if (targetIndex === i) {
-          targetIndex = -1;
-          typedSoFar = '';
-        } else if (targetIndex > i) {
-          targetIndex--;
-        }
-        combo = 0;
-        wordsEscaped++;
-        if (lives <= 0) {
-          toRemove.push(i);
-          // Defer game over after removing
-          break;
-        }
-      } else {
-        // Shield absorbs
-        spawnImpact(fw.x, groundY);
-        if (targetIndex === i) { targetIndex = -1; typedSoFar = ''; }
-        else if (targetIndex > i) targetIndex--;
-        wordsEscaped++;
-      }
-      toRemove.push(i);
-    }
-  }
-
-  // Remove from back to front to keep indices valid
-  for (let i = toRemove.length - 1; i >= 0; i--) {
-    fallingWords.splice(toRemove[i], 1);
-  }
-
-  if (lives <= 0) {
-    triggerGameOver();
-    return;
-  }
-
-  // Update particles
-  for (let i = particles.length - 1; i >= 0; i--) {
-    const p = particles[i];
-    p.x += p.vx * dt;
-    p.y += p.vy * dt;
-    p.vy += 120 * dt; // gravity
-    p.life -= dt;
-    if (p.life <= 0) particles.splice(i, 1);
-  }
-
-  // Update flashes
-  for (let i = flashes.length - 1; i >= 0; i--) {
-    flashes[i].life -= dt;
-    if (flashes[i].life <= 0) flashes.splice(i, 1);
-  }
-
-  // Wave timer
-  waveTimer -= dt;
-  if (waveTimer <= 0) {
-    endWave();
-    return;
-  }
-
-  // Spawn words
-  spawnAccum += dt;
-  if (spawnAccum >= spawnInterval) {
-    spawnAccum -= spawnInterval;
-    spawnWord();
-    spawnInterval = Math.max(0.5, 3 - wave * 0.2);
-  }
-}
-
-// ─────────────────────────────────────────────
-//  DRAW
-// ─────────────────────────────────────────────
-function draw(now) {
+// ================================================================
+//  INITIAL DRAW (menu state)
+// ================================================================
+(function init() {
+  gameSeed = (Math.random() * 1e9) | 0;
+  buildings = generateBuildings(gameSeed);
   ctx.clearRect(0, 0, W, H);
-
-  // Sky gradient
-  const sky = ctx.createLinearGradient(0, 0, 0, H * 0.7);
-  sky.addColorStop(0, '#06060e');
-  sky.addColorStop(1, '#0f0f24');
-  ctx.fillStyle = sky;
-  ctx.fillRect(0, 0, W, H);
-
-  // Stars
-  for (const s of stars) {
-    const tw = Math.sin(now * 0.001 * s.twinkleSpeed + s.twinkleOffset) * 0.4 + 0.6;
-    ctx.globalAlpha = s.alpha * tw;
-    ctx.beginPath();
-    ctx.arc(s.x * W, s.y * H, s.r, 0, Math.PI * 2);
-    ctx.fillStyle = '#ffffff';
-    ctx.fill();
-  }
-  ctx.globalAlpha = 1;
-
-  // Moon
-  ctx.save();
-  ctx.beginPath();
-  ctx.arc(W * 0.82, H * 0.09, 22, 0, Math.PI * 2);
-  ctx.fillStyle = '#f0e8c0';
-  ctx.shadowColor = '#f0e8c088';
-  ctx.shadowBlur = 20;
-  ctx.fill();
-  ctx.restore();
-
-  // Flash effects (word hit ground)
-  for (const f of flashes) {
-    const alpha = f.life / f.maxLife;
-    ctx.save();
-    ctx.globalAlpha = alpha * 0.35;
-    ctx.fillStyle = '#ff3333';
-    ctx.fillRect(0, 0, W, H);
-    ctx.restore();
-  }
-
-  // City skyline
-  drawSkyline();
-
-  // Particles
-  for (const p of particles) {
-    const alpha = p.life / p.maxLife;
-    ctx.save();
-    ctx.globalAlpha = alpha;
-    ctx.fillStyle = p.color;
-    ctx.shadowColor = p.color;
-    ctx.shadowBlur = 6;
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, p.size * alpha, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
-  }
-
-  // Words
-  drawWords(now);
-
-  // Shield overlay
-  if (shieldActive) {
-    ctx.save();
-    const t = now * 0.003;
-    ctx.strokeStyle = `rgba(124,92,252,${0.3 + Math.sin(t) * 0.15})`;
-    ctx.lineWidth = 3;
-    ctx.strokeRect(3, 3, W - 6, H - 6);
-    ctx.restore();
-  }
-
-  // Slow overlay
-  if (slowActive) {
-    ctx.save();
-    ctx.fillStyle = 'rgba(91,200,250,0.04)';
-    ctx.fillRect(0, 0, W, H);
-    ctx.restore();
-  }
-
-  // Wave timer bar (thin strip at top of HUD area)
-  drawWaveBar();
-}
-
-function drawSkyline() {
-  const baseY = H - 40;
-  const damageRatio = buildingDamage / 5;
-
-  for (let bi = 0; bi < buildings.length; bi++) {
-    const b = buildings[bi];
-    // Determine if this building is "damaged"
-    const damaged = bi < buildings.length * damageRatio;
-
-    ctx.save();
-
-    // Building body
-    const buildingGrad = ctx.createLinearGradient(b.x, b.y, b.x, baseY);
-    if (damaged) {
-      buildingGrad.addColorStop(0, '#2a1a1a');
-      buildingGrad.addColorStop(1, '#1a1010');
-    } else {
-      buildingGrad.addColorStop(0, '#1e1e2e');
-      buildingGrad.addColorStop(1, '#12121e');
-    }
-    ctx.fillStyle = buildingGrad;
-    ctx.fillRect(b.x, b.y, b.w, b.h);
-
-    // Building outline
-    ctx.strokeStyle = damaged ? '#3a2020' : '#2e2e3e';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(b.x, b.y, b.w, b.h);
-
-    // Windows
-    const winW = 7, winH = 5;
-    const winPadX = Math.max(3, (b.w - b.winCols * winW) / (b.winCols + 1));
-    const rows = Math.max(1, (b.h - 8) / 12 | 0);
-    for (let row = 0; row < rows; row++) {
-      for (let col = 0; col < b.winCols; col++) {
-        const wx = b.x + winPadX + col * (winW + winPadX);
-        const wy = b.y + 6 + row * 12;
-        // Use a pseudo-random but stable value per window
-        const seed = (bi * 100 + row * 10 + col) * 2654435761;
-        const lit = !damaged && ((seed & 0xffff) > 0x6000);
-        if (lit) {
-          ctx.fillStyle = (seed & 0xff) > 180 ? '#ffe89a' : '#a8d8ff';
-          ctx.shadowColor = (seed & 0xff) > 180 ? '#ffd700' : '#5bc8fa';
-          ctx.shadowBlur = 4;
-        } else {
-          ctx.fillStyle = damaged ? '#1a0808' : '#0e0e18';
-          ctx.shadowBlur = 0;
-        }
-        ctx.fillRect(wx, wy, winW, winH);
-      }
-    }
-
-    ctx.restore();
-  }
-
-  // Ground strip
-  ctx.fillStyle = '#10101a';
-  ctx.fillRect(0, baseY, W, 40);
-  // Road markings
-  ctx.fillStyle = '#1a1a2e';
-  ctx.fillRect(0, baseY + 2, W, 2);
-}
-
-function drawWords(now) {
-  ctx.textBaseline = 'middle';
-  const FONT_SIZE = 15;
-  ctx.font = `700 ${FONT_SIZE}px 'Courier New', monospace`;
-
-  for (let i = 0; i < fallingWords.length; i++) {
-    const fw = fallingWords[i];
-    const isTarget = i === targetIndex;
-
-    let dx = 0;
-    if (fw.shaking > 0) {
-      dx = Math.sin(fw.shaking * 80) * fw.shakeAmt * (fw.shaking / 0.3);
-    }
-
-    const x = fw.x + dx;
-    const y = fw.y;
-
-    // Measure word for background
-    const fullW = ctx.measureText(fw.word).width;
-    const padX = 6, padY = 4;
-
-    // Background pill
-    ctx.save();
-    ctx.beginPath();
-    const bx = x - fullW / 2 - padX;
-    const by = y - FONT_SIZE / 2 - padY;
-    const bw = fullW + padX * 2;
-    const bh = FONT_SIZE + padY * 2;
-    roundRect(ctx, bx, by, bw, bh, 5);
-
-    if (fw.special) {
-      ctx.fillStyle = 'rgba(20,12,30,0.88)';
-      ctx.shadowColor = fw.color;
-      ctx.shadowBlur = 14;
-    } else if (isTarget) {
-      ctx.fillStyle = 'rgba(30,28,10,0.92)';
-      ctx.shadowColor = '#ffd700';
-      ctx.shadowBlur = 10;
-    } else {
-      ctx.fillStyle = 'rgba(15,15,30,0.82)';
-      ctx.shadowBlur = 0;
-    }
-    ctx.fill();
-
-    // Border
-    if (isTarget) {
-      ctx.strokeStyle = 'rgba(255,215,0,0.7)';
-      ctx.lineWidth = 1.5;
-    } else if (fw.special) {
-      ctx.strokeStyle = fw.color + 'aa';
-      ctx.lineWidth = 1.5;
-    } else {
-      ctx.strokeStyle = 'rgba(100,100,160,0.3)';
-      ctx.lineWidth = 1;
-    }
-    ctx.stroke();
-    ctx.restore();
-
-    // Draw text letter by letter for coloring
-    let curX = x - fullW / 2;
-    for (let ci = 0; ci < fw.word.length; ci++) {
-      const ch = fw.word[ci];
-      const chW = ctx.measureText(ch).width;
-
-      ctx.save();
-      ctx.font = `700 ${FONT_SIZE}px 'Courier New', monospace`;
-      ctx.textBaseline = 'middle';
-
-      if (fw.special) {
-        // Special word colors
-        ctx.fillStyle = fw.color;
-        ctx.shadowColor = fw.color;
-        ctx.shadowBlur = isTarget ? 16 : 8;
-      } else if (isTarget && ci < fw.typed) {
-        // Already typed — green
-        ctx.fillStyle = '#7ef77e';
-        ctx.shadowColor = '#7ef77e';
-        ctx.shadowBlur = 8;
-      } else if (isTarget) {
-        // Remaining — yellow
-        ctx.fillStyle = '#ffd700';
-        ctx.shadowColor = '#ffd70088';
-        ctx.shadowBlur = 6;
-      } else {
-        // Normal word
-        ctx.fillStyle = '#c8c8e0';
-        ctx.shadowColor = '#8888cc';
-        ctx.shadowBlur = 4;
-      }
-
-      ctx.fillText(ch, curX, y);
-      ctx.restore();
-      curX += chW;
-    }
-
-    // Draw cursor after typed portion for active target
-    if (isTarget && fw.typed < fw.word.length && fw.typed > 0) {
-      // Measure typed portion width
-      const typedW = ctx.measureText(fw.word.slice(0, fw.typed)).width;
-      const cursorX = x - fullW / 2 + typedW;
-      const pulse = Math.sin(now * 0.008) * 0.5 + 0.5;
-      ctx.save();
-      ctx.globalAlpha = 0.6 + pulse * 0.4;
-      ctx.fillStyle = '#ffd700';
-      ctx.fillRect(cursorX, y - FONT_SIZE / 2, 2, FONT_SIZE);
-      ctx.restore();
-    }
-  }
-}
-
-function drawWaveBar() {
-  if (state !== 'playing') return;
-  const ratio = Math.max(0, waveTimer / WAVE_DURATION);
-  const barH = 3;
-  const barY = 44; // below HUD area top
-  ctx.save();
-  ctx.fillStyle = '#1a1a24';
-  ctx.fillRect(0, barY, W, barH);
-  const col = ratio > 0.5 ? '#7c5cfc' : ratio > 0.25 ? '#fa9c1e' : '#ff4444';
-  ctx.fillStyle = col;
-  ctx.fillRect(0, barY, W * ratio, barH);
-  ctx.restore();
-}
-
-function roundRect(ctx, x, y, w, h, r) {
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.lineTo(x + w - r, y);
-  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-  ctx.lineTo(x + w, y + h - r);
-  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-  ctx.lineTo(x + r, y + h);
-  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-  ctx.lineTo(x, y + r);
-  ctx.quadraticCurveTo(x, y, x + r, y);
-  ctx.closePath();
-}
-
-// ─────────────────────────────────────────────
-//  MAIN LOOP
-// ─────────────────────────────────────────────
-function gameLoop(now) {
-  const dt = Math.min((now - lastTime) / 1000, 0.1); // cap at 100ms
-  lastTime = now;
-
-  update(dt);
-  draw(now);
-  updateHUD();
-
-  if (state !== 'gameover' && state !== 'start') {
-    requestAnimationFrame(gameLoop);
-  } else if (state === 'gameover') {
-    // Final draw
-    draw(now);
-  }
-}
-
-// ─────────────────────────────────────────────
-//  BUTTON BINDINGS
-// ─────────────────────────────────────────────
-document.getElementById('startBtn').addEventListener('click', startGame);
-document.getElementById('restartBtn').addEventListener('click', startGame);
-
-// Draw static start screen
-resize();
-generateSkyline();
-(function drawStart() {
-  draw(performance.now());
+  drawBackground();
+  drawStars();
+  drawGround();
+  drawBuildings();
 })();
 </script>
 </body>
