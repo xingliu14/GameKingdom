@@ -18,6 +18,15 @@
 const GAMES = [
   // ----- Puzzle -----
   {
+    id: 'bubble-burst',
+    title: 'Bubble Burst',
+    desc: 'Aim and shoot to match 3+ bubbles. Pop clusters, chain combos, and clear the board!',
+    category: 'puzzle',
+    icon: '🫧',
+    path: 'games/bubble-burst.html',
+    tags: [],
+  },
+  {
     id: 'sliding-puzzle',
     title: 'Sliding Puzzle',
     desc: 'Rearrange the scrambled tiles back into order.',
@@ -94,6 +103,15 @@ const GAMES = [
 
   // ----- Casual -----
   {
+    id: 'snake-plus',
+    title: 'Snake Plus',
+    desc: 'Enhanced Snake with power-ups, game modes, obstacles, and visual effects.',
+    category: 'casual',
+    icon: '🐍',
+    path: 'games/snake-plus.html',
+    tags: [],
+  },
+  {
     id: 'balloon-pop',
     title: 'Balloon Pop',
     desc: 'Pop as many balloons as you can before time runs out.',
@@ -133,6 +151,15 @@ const GAMES = [
   },
 
   // ----- Strategy -----
+  {
+    id: 'dungeon-rogue',
+    title: 'Dungeon Rogue',
+    desc: 'Turn-based roguelike: explore 5 floors, slay monsters, and defeat the Dragon.',
+    category: 'strategy',
+    icon: '🐉',
+    path: 'games/dungeon-rogue.html',
+    tags: ['rpg', 'roguelike'],
+  },
   {
     id: 'card-quest',
     title: 'Card Quest',
