@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sliding Puzzle — GameKingdom</title>
+  <meta name="description" content="Rearrange the scrambled tiles back into order." />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0f0f13; --surface: #1a1a24; --border: #2e2e3e;
+      --accent: #7c5cfc; --text: #e8e8f0; --text-dim: #888899;
+    }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100dvh; display: flex; flex-direction: column;
+    }
+    a { color: var(--accent); }
+
+    .game-nav {
+      padding: 12px 16px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .back-link { font-size: .9rem; text-decoration: none; }
+    .back-link:hover { text-decoration: underline; }
+    .game-nav h1 { font-size: 1.1rem; font-weight: 700; }
+
+    #gameContainer {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+      gap: 20px;
+    }
+
+    #hud {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      font-size: 1rem;
+    }
+    #movesLabel { color: var(--text-dim); }
+    #movesCount { font-weight: 700; font-size: 1.2rem; color: var(--accent); }
+
+    #board {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      background: var(--surface);
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 10px;
+      width: min(360px, 92vw);
+      height: min(360px, 92vw);
+    }
+
+    .tile {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      font-size: clamp(1.1rem, 4vw, 1.6rem);
+      font-weight: 700;
+      cursor: pointer;
+      user-select: none;
+      transition: transform 0.1s ease, background 0.15s ease;
+      background: #2a2a38;
+      border: 2px solid var(--border);
+      color: var(--text);
+    }
+    .tile:hover { background: #33334a; }
+    .tile:active { transform: scale(0.93); }
+    .tile.blank {
+      background: transparent;
+      border-color: transparent;
+      cursor: default;
+      pointer-events: none;
+    }
+    .tile.slide-hint {
+      border-color: var(--accent);
+    }
+
+    button {
+      padding: 10px 28px;
+      border: none;
+      border-radius: 8px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    button:hover { opacity: 0.85; }
+
+    #winMsg {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      background: var(--surface);
+      border: 2px solid var(--accent);
+      border-radius: 12px;
+      padding: 24px 32px;
+      text-align: center;
+    }
+    #winMsg.visible { display: flex; }
+    #winMsg h2 { font-size: 1.5rem; color: var(--accent); }
+    #winMsg p { color: var(--text-dim); }
+  </style>
+</head>
+<body>
+
+  <nav class="game-nav">
+    <a href="../index.html" class="back-link">← GameKingdom</a>
+    <h1>🧩 Sliding Puzzle</h1>
+  </nav>
+
+  <div id="gameContainer">
+    <div id="hud">
+      <span id="movesLabel">Moves:</span>
+      <span id="movesCount">0</span>
+    </div>
+
+    <div id="board" aria-label="Sliding puzzle grid"></div>
+
+    <div id="winMsg" role="alert">
+      <h2>Puzzle Solved! 🎉</h2>
+      <p id="winDetail"></p>
+      <button id="playAgainBtn">Play Again</button>
+    </div>
+
+    <button id="shuffleBtn">Shuffle</button>
+  </div>
+
+  <script>
+    const SIZE = 4;
+    const SOLVED = Array.from({ length: SIZE * SIZE }, (_, i) => (i + 1) % (SIZE * SIZE));
+    // SOLVED = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,0]
+
+    let tiles = [...SOLVED];
+    let moves = 0;
+    let gameActive = false;
+
+    const board = document.getElementById('board');
+    const movesCount = document.getElementById('movesCount');
+    const winMsg = document.getElementById('winMsg');
+    const winDetail = document.getElementById('winDetail');
+    const shuffleBtn = document.getElementById('shuffleBtn');
+    const playAgainBtn = document.getElementById('playAgainBtn');
+
+    function blankIndex() {
+      return tiles.indexOf(0);
+    }
+
+    function neighbors(idx) {
+      const row = Math.floor(idx / SIZE);
+      const col = idx % SIZE;
+      const result = [];
+      if (row > 0) result.push(idx - SIZE);
+      if (row < SIZE - 1) result.push(idx + SIZE);
+      if (col > 0) result.push(idx - 1);
+      if (col < SIZE - 1) result.push(idx + 1);
+      return result;
+    }
+
+    function shuffle() {
+      tiles = [...SOLVED];
+      moves = 0;
+      let blank = blankIndex();
+      let lastMoved = -1;
+      for (let i = 0; i < 300; i++) {
+        const ns = neighbors(blank).filter(n => n !== lastMoved);
+        const pick = ns[Math.floor(Math.random() * ns.length)];
+        tiles[blank] = tiles[pick];
+        tiles[pick] = 0;
+        lastMoved = blank;
+        blank = pick;
+      }
+      gameActive = true;
+      winMsg.classList.remove('visible');
+      shuffleBtn.style.display = '';
+      updateHud();
+      renderBoard();
+    }
+
+    function isSolved() {
+      return tiles.every((v, i) => v === SOLVED[i]);
+    }
+
+    function moveTile(idx) {
+      if (!gameActive) return;
+      const blank = blankIndex();
+      if (!neighbors(blank).includes(idx)) return;
+      tiles[blank] = tiles[idx];
+      tiles[idx] = 0;
+      moves++;
+      updateHud();
+      renderBoard();
+      if (isSolved()) onWin();
+    }
+
+    function onWin() {
+      gameActive = false;
+      winDetail.textContent = `Completed in ${moves} move${moves !== 1 ? 's' : ''}.`;
+      winMsg.classList.add('visible');
+      shuffleBtn.style.display = 'none';
+      window.dispatchEvent(new CustomEvent('gameOver', {
+        detail: { game: 'sliding-puzzle', score: moves }
+      }));
+    }
+
+    function updateHud() {
+      movesCount.textContent = moves;
+    }
+
+    function renderBoard() {
+      const blank = blankIndex();
+      board.innerHTML = '';
+      tiles.forEach((val, idx) => {
+        const div = document.createElement('div');
+        div.className = 'tile' + (val === 0 ? ' blank' : '');
+        div.textContent = val === 0 ? '' : val;
+        if (val !== 0 && neighbors(blank).includes(idx)) {
+          div.classList.add('slide-hint');
+        }
+        div.addEventListener('click', () => moveTile(idx));
+        board.appendChild(div);
+      });
+    }
+
+    shuffleBtn.addEventListener('click', shuffle);
+    playAgainBtn.addEventListener('click', shuffle);
+
+    // Start with a shuffled board
+    shuffle();
+  </script>
+
+</body>
+</html>
