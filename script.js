@@ -207,6 +207,12 @@ const GAMES = [
     path: 'games/math-blitz.html',
     tags: [],
   },
+
+  // ----- New Games -----
+  { id: 'memory-match', title: 'Memory Match', desc: 'Flip cards and find matching pairs before time runs out.', category: 'casual', icon: '🃏', path: 'games/memory-match.html', tags: ['memory', 'cards', 'pairs'] },
+  { id: '2048',         title: '2048',         desc: 'Slide and merge tiles to reach the elusive 2048 tile.',  category: 'puzzle', icon: '🔢', path: 'games/2048.html',         tags: ['merge', 'numbers', 'sliding'] },
+  { id: 'word-search',  title: 'Word Search',  desc: 'Hunt for hidden words in a jumbled letter grid.',       category: 'word',   icon: '🔍', path: 'games/word-search.html',  tags: ['words', 'grid', 'search'] },
+  { id: 'flappy-bird',  title: 'Flappy Bird',  desc: "Tap to flap through pipes — one wrong move and it's over!", category: 'action', icon: '🐦', path: 'games/flappy-bird.html', tags: ['flappy', 'tap', 'pipes'] },
 ];
 
 // =====================================================
