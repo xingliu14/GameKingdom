@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Memory Match — GameKingdom</title>
+  <meta name="description" content="Flip cards and match all pairs in as few moves as possible." />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0f0f13; --surface: #1a1a24; --border: #2e2e3e;
+      --accent: #7c5cfc; --text: #e8e8f0; --text-dim: #888899;
+      --radius: 12px;
+    }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100dvh; display: flex; flex-direction: column;
+    }
+    a { color: var(--accent); }
+
+    /* ---- nav ---- */
+    .game-nav {
+      padding: 12px 16px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .back-link { font-size: .9rem; text-decoration: none; }
+    .back-link:hover { text-decoration: underline; }
+    .game-nav h1 { font-size: 1.1rem; font-weight: 700; }
+
+    /* ---- layout ---- */
+    #gameContainer {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 24px 16px 40px;
+      gap: 20px;
+    }
+
+    /* ---- HUD ---- */
+    #hud {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 28px;
+      font-size: .95rem;
+      flex-wrap: wrap;
+    }
+    .hud-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+    .hud-label {
+      font-size: .75rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+    .hud-value {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--accent);
+      line-height: 1;
+    }
+
+    /* ---- card grid ---- */
+    #board {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      width: min(400px, 95vw);
+    }
+
+    /* ---- individual card (3-D flip) ---- */
+    .card {
+      aspect-ratio: 1;
+      cursor: pointer;
+      perspective: 600px;
+      outline: none;
+    }
+    .card-inner {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.45s cubic-bezier(.4,0,.2,1);
+      border-radius: var(--radius);
+    }
+    .card.flipped .card-inner,
+    .card.matched .card-inner {
+      transform: rotateY(180deg);
+    }
+    .card-face {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--radius);
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      user-select: none;
+    }
+
+    /* back of card */
+    .card-back {
+      background: #22223a;
+      border: 2px solid var(--border);
+      font-size: clamp(1.4rem, 5vw, 2rem);
+      color: var(--text-dim);
+      transition: border-color .15s, background .15s;
+    }
+    .card:hover:not(.flipped):not(.matched) .card-back {
+      border-color: var(--accent);
+      background: #282840;
+    }
+
+    /* front of card (emoji side) */
+    .card-front {
+      background: var(--surface);
+      border: 2px solid var(--border);
+      transform: rotateY(180deg);
+      font-size: clamp(1.5rem, 5.5vw, 2.2rem);
+      transition: border-color .15s;
+    }
+    .card.matched .card-front {
+      border-color: #3ddc84;
+      background: #16281e;
+    }
+
+    /* ---- buttons ---- */
+    .btn {
+      padding: 10px 28px;
+      border: none;
+      border-radius: 8px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity .15s, transform .1s;
+    }
+    .btn:hover { opacity: .85; }
+    .btn:active { transform: scale(.96); }
+    .btn-outline {
+      background: transparent;
+      border: 2px solid var(--accent);
+      color: var(--accent);
+    }
+    .btn-outline:hover { background: rgba(124,92,252,.12); opacity: 1; }
+
+    /* ---- win overlay ---- */
+    #winScreen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      background: var(--surface);
+      border: 2px solid var(--accent);
+      border-radius: var(--radius);
+      padding: 28px 36px;
+      text-align: center;
+      max-width: 340px;
+      width: 100%;
+      animation: popIn .35s cubic-bezier(.4,0,.2,1);
+    }
+    #winScreen.visible { display: flex; }
+    @keyframes popIn {
+      from { opacity: 0; transform: scale(.85); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+    #winScreen h2 {
+      font-size: 1.7rem;
+      color: var(--accent);
+    }
+    .win-stats {
+      display: flex;
+      gap: 28px;
+      justify-content: center;
+    }
+    .win-stat {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+    .win-stat .label { font-size: .78rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: .05em; }
+    .win-stat .value { font-size: 1.6rem; font-weight: 700; color: var(--text); }
+    #winScreen p { color: var(--text-dim); font-size: .9rem; }
+  </style>
+</head>
+<body>
+
+  <nav class="game-nav">
+    <a href="../index.html" class="back-link">← GameKingdom</a>
+    <h1>Memory Match</h1>
+  </nav>
+
+  <div id="gameContainer">
+
+    <div id="hud">
+      <div class="hud-item">
+        <span class="hud-label">Moves</span>
+        <span class="hud-value" id="movesDisplay">0</span>
+      </div>
+      <div class="hud-item">
+        <span class="hud-label">Pairs</span>
+        <span class="hud-value" id="pairsDisplay">0 / 8</span>
+      </div>
+      <div class="hud-item">
+        <span class="hud-label">Time</span>
+        <span class="hud-value" id="timeDisplay">0:00</span>
+      </div>
+    </div>
+
+    <div id="board" role="grid" aria-label="Memory Match card grid"></div>
+
+    <div id="winScreen" role="alert" aria-live="polite">
+      <h2>You Won!</h2>
+      <div class="win-stats">
+        <div class="win-stat">
+          <span class="label">Moves</span>
+          <span class="value" id="winMoves">—</span>
+        </div>
+        <div class="win-stat">
+          <span class="label">Time</span>
+          <span class="value" id="winTime">—</span>
+        </div>
+      </div>
+      <p id="winMsg">Great memory!</p>
+      <button class="btn" id="playAgainBtn">Play Again</button>
+    </div>
+
+    <button class="btn btn-outline" id="restartBtn">Restart</button>
+
+  </div>
+
+  <script>
+    // ── Emoji pairs (8 unique icons) ─────────────────────────────────────────
+    const ICONS = ['🦊','🐬','🌸','🍕','🎸','🚀','🍄','💎'];
+
+    // ── State ─────────────────────────────────────────────────────────────────
+    let cards       = [];   // array of card objects: { id, icon, el }
+    let flipped     = [];   // indices of currently face-up unmatched cards
+    let matched     = 0;
+    let moves       = 0;
+    let locked      = false;
+    let timerID     = null;
+    let startTime   = null;
+    let elapsedSecs = 0;
+    let gameActive  = false;
+
+    // ── DOM refs ──────────────────────────────────────────────────────────────
+    const board         = document.getElementById('board');
+    const movesDisplay  = document.getElementById('movesDisplay');
+    const pairsDisplay  = document.getElementById('pairsDisplay');
+    const timeDisplay   = document.getElementById('timeDisplay');
+    const winScreen     = document.getElementById('winScreen');
+    const winMoves      = document.getElementById('winMoves');
+    const winTime       = document.getElementById('winTime');
+    const winMsg        = document.getElementById('winMsg');
+    const restartBtn    = document.getElementById('restartBtn');
+    const playAgainBtn  = document.getElementById('playAgainBtn');
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+    function shuffle(arr) {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    function formatTime(secs) {
+      const m = Math.floor(secs / 60);
+      const s = secs % 60;
+      return `${m}:${s.toString().padStart(2, '0')}`;
+    }
+
+    function startTimer() {
+      stopTimer();
+      startTime = Date.now() - elapsedSecs * 1000;
+      timerID = setInterval(() => {
+        elapsedSecs = Math.floor((Date.now() - startTime) / 1000);
+        timeDisplay.textContent = formatTime(elapsedSecs);
+      }, 500);
+    }
+
+    function stopTimer() {
+      if (timerID) { clearInterval(timerID); timerID = null; }
+    }
+
+    function updateHUD() {
+      movesDisplay.textContent = moves;
+      pairsDisplay.textContent = `${matched} / 8`;
+    }
+
+    // ── Build board ───────────────────────────────────────────────────────────
+    function buildBoard() {
+      board.innerHTML = '';
+      cards = [];
+      flipped = [];
+      matched = 0;
+      moves = 0;
+      locked = false;
+      elapsedSecs = 0;
+      gameActive = false;
+      stopTimer();
+
+      winScreen.classList.remove('visible');
+      timeDisplay.textContent = '0:00';
+      updateHUD();
+
+      // Create 16 cards (8 pairs)
+      const icons = shuffle([...ICONS, ...ICONS]);
+
+      icons.forEach((icon, i) => {
+        const cardEl = document.createElement('div');
+        cardEl.className = 'card';
+        cardEl.setAttribute('role', 'gridcell');
+        cardEl.setAttribute('tabindex', '0');
+        cardEl.setAttribute('aria-label', 'Face-down card');
+        cardEl.innerHTML = `
+          <div class="card-inner">
+            <div class="card-face card-back" aria-hidden="true">🂠</div>
+            <div class="card-face card-front" aria-hidden="true">${icon}</div>
+          </div>`;
+
+        cardEl.addEventListener('click', () => handleFlip(i));
+        cardEl.addEventListener('keydown', e => {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleFlip(i); }
+        });
+
+        board.appendChild(cardEl);
+        cards.push({ id: i, icon, el: cardEl });
+      });
+    }
+
+    // ── Flip logic ─────────────────────────────────────────────────────────────
+    function handleFlip(idx) {
+      const card = cards[idx];
+
+      // Ignore if locked, already face-up or already matched
+      if (locked) return;
+      if (card.el.classList.contains('flipped')) return;
+      if (card.el.classList.contains('matched')) return;
+
+      // Start timer on first flip
+      if (!gameActive) {
+        gameActive = true;
+        startTimer();
+      }
+
+      card.el.classList.add('flipped');
+      card.el.setAttribute('aria-label', `Card: ${card.icon}`);
+      flipped.push(idx);
+
+      if (flipped.length === 2) {
+        locked = true;
+        moves++;
+        updateHUD();
+        checkMatch();
+      }
+    }
+
+    function checkMatch() {
+      const [a, b] = flipped;
+      if (cards[a].icon === cards[b].icon) {
+        // Matched!
+        setTimeout(() => {
+          cards[a].el.classList.add('matched');
+          cards[b].el.classList.add('matched');
+          cards[a].el.setAttribute('aria-label', `Matched: ${cards[a].icon}`);
+          cards[b].el.setAttribute('aria-label', `Matched: ${cards[b].icon}`);
+          flipped = [];
+          locked = false;
+          matched++;
+          updateHUD();
+          if (matched === 8) onWin();
+        }, 400);
+      } else {
+        // No match — flip back after a short pause
+        setTimeout(() => {
+          cards[a].el.classList.remove('flipped');
+          cards[b].el.classList.remove('flipped');
+          cards[a].el.setAttribute('aria-label', 'Face-down card');
+          cards[b].el.setAttribute('aria-label', 'Face-down card');
+          flipped = [];
+          locked = false;
+        }, 900);
+      }
+    }
+
+    // ── Win ────────────────────────────────────────────────────────────────────
+    function onWin() {
+      stopTimer();
+      gameActive = false;
+
+      winMoves.textContent = moves;
+      winTime.textContent  = formatTime(elapsedSecs);
+
+      // Personalise message based on performance
+      if (moves <= 12) {
+        winMsg.textContent = 'Incredible memory!';
+      } else if (moves <= 18) {
+        winMsg.textContent = 'Great memory!';
+      } else if (moves <= 26) {
+        winMsg.textContent = 'Well played!';
+      } else {
+        winMsg.textContent = 'Finished! Can you do better?';
+      }
+
+      winScreen.classList.add('visible');
+
+      window.dispatchEvent(new CustomEvent('gameOver', {
+        detail: { game: 'memory-match', score: moves }
+      }));
+    }
+
+    // ── Controls ───────────────────────────────────────────────────────────────
+    restartBtn.addEventListener('click', buildBoard);
+    playAgainBtn.addEventListener('click', buildBoard);
+
+    // ── Init ───────────────────────────────────────────────────────────────────
+    buildBoard();
+  </script>
+
+</body>
+</html>
