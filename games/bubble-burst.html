@@ -51,7 +51,7 @@
     canvas {
       display: block; width: 100%; height: auto;
       border: 1px solid var(--border); border-radius: 8px;
-      cursor: crosshair;
+      cursor: crosshair; touch-action: none;
     }
 
     /* Overlay screens */
@@ -115,16 +115,16 @@
     </div>
     <div class="hud-item">
       <span class="hud-label">Shots</span>
-      <span class="hud-value" id="hudShots">10</span>
+      <span class="hud-value" id="hudShots">0</span>
     </div>
     <div class="hud-item">
-      <span class="hud-label">Next Row</span>
-      <span class="hud-value" id="hudNext">10</span>
+      <span class="hud-label">Next Row in</span>
+      <span class="hud-value" id="hudNext">8</span>
     </div>
   </div>
 
   <div id="canvasWrapper">
-    <canvas id="gameCanvas" width="400" height="600"></canvas>
+    <canvas id="gameCanvas" width="400" height="580"></canvas>
 
     <!-- Start screen -->
     <div class="overlay" id="startOverlay">
@@ -183,7 +183,7 @@
 //  Constants
 // ─────────────────────────────────────────────
 const CANVAS_W = 400;
-const CANVAS_H = 600;
+const CANVAS_H = 580;
 const R = 18;                // bubble radius
 const DIAM = R * 2;
 const COLS = Math.floor(CANVAS_W / DIAM); // 11
@@ -192,10 +192,10 @@ const HEX_OFFSET = R;                      // horizontal offset for odd rows
 // Row height for hex grid (rows overlap slightly)
 const ROW_H = Math.round(R * 1.732);       // ≈ 31
 
-const DANGER_Y = CANVAS_H - 100;
+const DANGER_Y = 480;
 
-const COLORS = ['#e53935','#1e88e5','#43a047','#fdd835','#8e24aa','#ef6c00'];
-const COLOR_LIGHTS = ['#ff9999','#90caf9','#a5d6a7','#fff59d','#ce93d8','#ffcc80'];
+const COLORS = ['#ff4444','#4488ff','#44cc44','#ffcc00','#cc44ff','#ff8844'];
+const COLOR_LIGHTS = ['#ffaaaa','#aaccff','#99eeaa','#ffe87a','#e8aaff','#ffcc99'];
 
 // Special bubble types
 const TYPE_NORMAL    = 0;
@@ -204,10 +204,10 @@ const TYPE_BOMB      = 2;
 const TYPE_LIGHTNING = 3;
 
 const LEVEL_CONFIG = [
-  { rows: 8,  colorsUsed: 4, specialChance: 0.04 },
-  { rows: 9,  colorsUsed: 5, specialChance: 0.05 },
-  { rows: 10, colorsUsed: 5, specialChance: 0.06 },
-  { rows: 11, colorsUsed: 6, specialChance: 0.07 },
+  { rows: 8,  colorsUsed: 3, specialChance: 0.04 },
+  { rows: 9,  colorsUsed: 4, specialChance: 0.05 },
+  { rows: 10, colorsUsed: 4, specialChance: 0.06 },
+  { rows: 11, colorsUsed: 5, specialChance: 0.07 },
   { rows: 12, colorsUsed: 6, specialChance: 0.08 },
 ];
 
@@ -361,31 +361,67 @@ function initGrid(levelIdx) {
 // ─────────────────────────────────────────────
 //  Bubble drawing
 // ─────────────────────────────────────────────
+// HSL helper for animated rainbow
+function hslStr(h, s, l) {
+  return `hsl(${h},${s}%,${l}%)`;
+}
+
 function getBubbleColors(bubble) {
-  if (bubble.type === TYPE_RAINBOW) {
-    return { base: '#b0b0ff', light: '#ffffff', glow: '#7c5cfc' };
-  }
   if (bubble.type === TYPE_BOMB) {
-    return { base: '#e65100', light: '#ffcc80', glow: '#ff6d00' };
+    return { base: '#2a2a2a', light: '#666', glow: '#ff8800' };
   }
   if (bubble.type === TYPE_LIGHTNING) {
-    return { base: '#00bcd4', light: '#e0f7fa', glow: '#00e5ff' };
+    return { base: '#ffcc00', light: '#ffffa0', glow: '#ffee00' };
   }
   const ci = bubble.colorIdx;
   return { base: COLORS[ci], light: COLOR_LIGHTS[ci], glow: COLORS[ci] };
 }
 
 function drawBubble(x, y, bubble, alpha = 1, scale = 1) {
-  const { base, light, glow } = getBubbleColors(bubble);
   const r = R * scale;
-
   ctx.save();
   ctx.globalAlpha = alpha;
   ctx.translate(x, y);
 
+  if (bubble.type === TYPE_RAINBOW) {
+    // Animated rainbow shimmer
+    const t = Date.now() / 700;
+    const h1 = (t * 90) % 360;
+    const h2 = (h1 + 120) % 360;
+    const h3 = (h1 + 240) % 360;
+    // Glow
+    const glowGrad = ctx.createRadialGradient(0, 0, r*0.4, 0, 0, r*1.4);
+    glowGrad.addColorStop(0, hslStr(h1, 100, 60) );
+    glowGrad.addColorStop(0.5, hslStr(h2, 100, 55) );
+    glowGrad.addColorStop(1, 'transparent');
+    ctx.beginPath(); ctx.arc(0, 0, r*1.4, 0, Math.PI*2);
+    ctx.fillStyle = glowGrad; ctx.fill();
+    // Body
+    const grad = ctx.createRadialGradient(-r*0.3, -r*0.3, r*0.05, 0, 0, r);
+    grad.addColorStop(0, 'white');
+    grad.addColorStop(0.3, hslStr(h1, 100, 75));
+    grad.addColorStop(0.65, hslStr(h2, 100, 60));
+    grad.addColorStop(1, hslStr(h3, 100, 40));
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI*2);
+    ctx.fillStyle = grad; ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.lineWidth = 1.5; ctx.stroke();
+    // shine
+    const sg = ctx.createRadialGradient(-r*0.3,-r*0.35,0,-r*0.15,-r*0.28,r*0.52);
+    sg.addColorStop(0,'rgba(255,255,255,0.75)'); sg.addColorStop(1,'rgba(255,255,255,0)');
+    ctx.beginPath(); ctx.arc(-r*0.15,-r*0.28,r*0.52,0,Math.PI*2);
+    ctx.fillStyle = sg; ctx.fill();
+    ctx.font = `bold ${Math.round(r*0.85)}px sans-serif`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = 'rgba(255,255,255,0.95)'; ctx.fillText('★', 0, 1);
+    ctx.restore();
+    return;
+  }
+
+  const { base, light, glow } = getBubbleColors(bubble);
+
   // Glow
   const glowGrad = ctx.createRadialGradient(0, 0, r * 0.5, 0, 0, r * 1.3);
-  glowGrad.addColorStop(0, glow + '55');
+  glowGrad.addColorStop(0, glow + '44');
   glowGrad.addColorStop(1, 'transparent');
   ctx.beginPath();
   ctx.arc(0, 0, r * 1.3, 0, Math.PI * 2);
@@ -403,13 +439,13 @@ function drawBubble(x, y, bubble, alpha = 1, scale = 1) {
   ctx.fill();
 
   // Outline
-  ctx.strokeStyle = 'rgba(255,255,255,0.15)';
-  ctx.lineWidth = 1;
+  ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+  ctx.lineWidth = 1.5;
   ctx.stroke();
 
   // Shine
   const shineGrad = ctx.createRadialGradient(-r * 0.3, -r * 0.4, 0, -r * 0.15, -r * 0.3, r * 0.55);
-  shineGrad.addColorStop(0, 'rgba(255,255,255,0.6)');
+  shineGrad.addColorStop(0, 'rgba(255,255,255,0.65)');
   shineGrad.addColorStop(1, 'rgba(255,255,255,0)');
   ctx.beginPath();
   ctx.arc(-r * 0.15, -r * 0.3, r * 0.55, 0, Math.PI * 2);
@@ -417,18 +453,11 @@ function drawBubble(x, y, bubble, alpha = 1, scale = 1) {
   ctx.fill();
 
   // Special icons
-  ctx.font = `bold ${Math.round(r * 0.9)}px serif`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  if (bubble.type === TYPE_RAINBOW) {
-    ctx.fillStyle = 'rgba(255,255,255,0.9)';
-    ctx.fillText('★', 0, 1);
-  } else if (bubble.type === TYPE_BOMB) {
-    ctx.fillStyle = 'rgba(0,0,0,0.8)';
-    ctx.fillText('💥', 0, 1);
-  } else if (bubble.type === TYPE_LIGHTNING) {
-    ctx.fillStyle = 'rgba(0,0,0,0.8)';
-    ctx.fillText('⚡', 0, 1);
+  if (bubble.type === TYPE_BOMB || bubble.type === TYPE_LIGHTNING) {
+    ctx.font = `${Math.round(r * 1.05)}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(bubble.type === TYPE_BOMB ? '💥' : '⚡', 0, 1);
   }
 
   ctx.restore();
@@ -460,10 +489,10 @@ function computeTrajectory(startX, startY, angle, maxBounces, steps) {
     x += vx * speed;
     y += vy * speed;
 
-    // Wall bounce
+    // Wall bounce (left/right only; top = stop)
     if (x - R < 0) { x = R; vx = Math.abs(vx); bounces++; }
     if (x + R > CANVAS_W) { x = CANVAS_W - R; vx = -Math.abs(vx); bounces++; }
-    if (y - R < 0) { y = R; vy = Math.abs(vy); bounces++; }
+    if (y - R < 0) { pts.push({ x, y: R }); break; } // hit top, stop
 
     pts.push({ x, y });
 
@@ -995,6 +1024,7 @@ function attachBubble(px, py, bubble) {
       for (const t of toBePop) triggerPop(t.row, t.col);
       totalPopped += toBePop.length;
       comboCount++;
+      shotsWithoutPop = 0;
     }
   } else if (bubble.type === TYPE_LIGHTNING) {
     const targets = getLightningTargets(col, row);
@@ -1007,6 +1037,42 @@ function attachBubble(px, py, bubble) {
       for (const t of toBePop) triggerPop(t.row, t.col);
       totalPopped += toBePop.length;
       comboCount++;
+      shotsWithoutPop = 0;
+    }
+  } else if (bubble.type === TYPE_RAINBOW) {
+    // Rainbow: find the largest adjacent same-color cluster and join it
+    const adjNbrs = getNeighbors(row, col);
+    const colorGroups = {};
+    for (const nb of adjNbrs) {
+      if (grid[nb.row] && grid[nb.row][nb.col]) {
+        const nb_b = grid[nb.row][nb.col];
+        if (nb_b.type === TYPE_NORMAL) {
+          const ci = nb_b.colorIdx;
+          if (!colorGroups[ci]) {
+            const grp = findConnected(nb.row, nb.col, b =>
+              b.type === TYPE_NORMAL && b.colorIdx === ci
+            );
+            colorGroups[ci] = grp;
+          }
+        }
+      }
+    }
+    let bestColor = -1, bestSize = 0;
+    for (const [ci, grp] of Object.entries(colorGroups)) {
+      if (grp.length > bestSize) { bestSize = grp.length; bestColor = parseInt(ci); }
+    }
+    if (bestColor >= 0 && bestSize >= 2) {
+      // Act as that color to make a group of bestSize+1
+      grid[row][col] = makeBubble(TYPE_NORMAL, bestColor);
+      const combined = findConnected(row, col, b =>
+        b.type === TYPE_NORMAL && b.colorIdx === bestColor
+      );
+      if (combined.length >= 3) {
+        for (const c of combined) triggerPop(c.row, c.col);
+        totalPopped += combined.length;
+        comboCount++;
+        shotsWithoutPop = 0;
+      }
     }
   } else {
     // Normal match: find connected same-color
@@ -1047,7 +1113,7 @@ function attachBubble(px, py, bubble) {
     }, 200);
   } else {
     // No pop - check if new row needed
-    if (shotsWithoutPop >= 10) {
+    if (shotsWithoutPop >= 8) {
       addNewRow();
       shotsWithoutPop = 0;
     }
@@ -1055,7 +1121,7 @@ function attachBubble(px, py, bubble) {
   }
 
   // Update next-row countdown
-  hudNext.textContent = Math.max(0, 10 - shotsWithoutPop);
+  hudNext.textContent = Math.max(0, 8 - shotsWithoutPop);
 }
 
 // ─────────────────────────────────────────────
@@ -1192,7 +1258,7 @@ function updateHUD() {
   hudScore.textContent = score.toLocaleString();
   hudLevel.textContent = level;
   hudShots.textContent = totalShots;
-  hudNext.textContent  = Math.max(0, 10 - shotsWithoutPop);
+  hudNext.textContent  = Math.max(0, 8 - shotsWithoutPop);
 }
 
 // ─────────────────────────────────────────────

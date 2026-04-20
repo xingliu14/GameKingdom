@@ -62,7 +62,7 @@ const GAMES = [
     category: 'action',
     icon: '⌨️',
     path: 'games/typing-terror.html',
-    tags: [],
+    tags: ['word'],
   },
   {
     id: 'space-shooter',
@@ -120,35 +120,8 @@ const GAMES = [
     path: 'games/snake-plus.html',
     tags: [],
   },
-  {
-    id: 'balloon-pop',
-    title: 'Balloon Pop',
-    desc: 'Pop as many balloons as you can before time runs out.',
-    category: 'casual',
-    icon: '🎈',
-    path: 'games/balloon-pop.html',
-    tags: [],
-  },
-  {
-    id: 'color-match',
-    title: 'Color Match',
-    desc: 'Match the tile colors before the timer reaches zero.',
-    category: 'casual',
-    icon: '🎨',
-    path: 'games/color-match.html',
-    tags: [],
-  },
 
   // ----- Word -----
-  {
-    id: 'typing-terror',
-    title: 'Typing Terror',
-    desc: 'Type falling words before they destroy your city! Special words grant powerful bonuses.',
-    category: 'word',
-    icon: '⌨️',
-    path: 'games/typing-terror.html',
-    tags: [],
-  },
   {
     id: 'word-scramble',
     title: 'Word Scramble',
