@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Minesweeper — GameKingdom</title>
   <meta name="description" content="Classic Minesweeper with three difficulty levels. Reveal all safe cells to win!" />
+  <script src="../sounds.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -362,6 +363,7 @@
         startCell.revealed = true;
         startCell.el.classList.add('mine-hit');
         startCell.el.classList.add('mine-revealed');
+        SFX.play('hit');
         endGame(false);
         return;
       }
@@ -388,6 +390,7 @@
         }
       }
 
+      SFX.play('click');
       checkWin();
     }
 
@@ -402,6 +405,7 @@
       stopTimer();
 
       if (won) {
+        SFX.play('win');
         resetBtn.textContent = '😎';
         statusMsg.textContent = '🎉 You win!';
         statusMsg.className = 'status-msg win';

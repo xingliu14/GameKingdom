@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Sudoku — GameKingdom</title>
   <meta name="description" content="Classic 9×9 Sudoku — fill every row, column, and box with 1–9." />
+  <script src="../sounds.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -338,6 +339,9 @@ function inputNum(n) {
   if (n > 0 && n !== solution[selected]) {
     errors++;
     errEl.textContent = errors;
+    SFX.play('wrong');
+  } else if (n > 0) {
+    SFX.play('click');
   }
   render();
   checkWin();
@@ -365,6 +369,7 @@ gridEl.addEventListener('keydown', e => {
 function checkWin() {
   if (!board.every((v, i) => v === solution[i])) return;
   won = true;
+  SFX.play('win');
   stopTimer();
   const m = (ticks / 60) | 0, s = ticks % 60;
   const t = m ? `${m}m ${s}s` : `${s}s`;
