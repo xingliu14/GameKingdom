@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Asteroid Dodge — GameKingdom</title>
   <meta name="description" content="Steer your ship and dodge falling asteroids as long as you can!" />
+  <script src="../sounds.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -193,8 +194,10 @@
     function update(dt) {
       if (phase !== 'playing') return;
 
+      const prevFloor = Math.floor(score);
       score += dt;
       scoreTxt.textContent = Math.floor(score);
+      if (Math.floor(score) !== prevFloor && Math.floor(score) % 5 === 0) SFX.play('score');
 
       // Ship movement
       let dir = 0;
@@ -222,6 +225,8 @@
         const dx = a.x - ship.x, dy = a.y - ship.y;
         if (dx * dx + dy * dy < (a.r + 16) * (a.r + 16)) {
           particles.push(...mkBurst(ship.x, ship.y));
+          SFX.play('hit');
+          SFX.play('lose');
           phase = 'dead';
           window.dispatchEvent(new CustomEvent('gameOver', {
             detail: { game: 'asteroid-dodge', score: Math.floor(score) },

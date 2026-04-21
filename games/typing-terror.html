@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Typing Terror — GameKingdom</title>
   <meta name="description" content="Type falling words to defend your city from destruction!" />
+  <script src="../sounds.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -686,6 +687,7 @@ function handleKey(e) {
   if (!expected) return; // shouldn't happen
 
   if (ch === expected.toLowerCase()) {
+    SFX.play('click');
     targetedWord.typed++;
     typedSoFar += expected;
 
@@ -693,6 +695,7 @@ function handleKey(e) {
       completeWord(targetedWord);
     }
   } else {
+    SFX.play('wrong');
     targetedWord.flash = 0.22;
   }
 
@@ -731,6 +734,7 @@ function completeWord(word) {
     activeWords = [];
   }
 
+  SFX.play('score');
   burst(word.x, word.y, word.special ? word.baseColor : '#4ade80');
   removeWord(word);
   targetedWord = null;
@@ -770,6 +774,7 @@ function checkWaveComplete() {
     if (wave >= MAX_WAVE) {
       endGame(true);
     } else {
+      SFX.play('win');
       STATE = 'wavePause';
       wave++;
       wordsSpawnedThisWave = 0;
@@ -884,6 +889,7 @@ function startGame() {
 
 function endGame(won) {
   STATE = won ? 'win' : 'gameOver';
+  if (!won) SFX.play('lose');
   if (animFrame) { cancelAnimationFrame(animFrame); animFrame = null; }
 
   // Draw one last frame

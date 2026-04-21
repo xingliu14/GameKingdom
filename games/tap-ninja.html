@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Tap Ninja — GameKingdom</title>
   <meta name="description" content="Tap fast to slice ninjas before they escape!" />
+  <script src="../sounds.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -272,6 +273,7 @@
 
         if (progress >= 1 && !t.hit) {
           // Expired — lose a life
+          SFX.play('wrong');
           addMiss(t.x, t.y);
           targets.splice(i, 1);
           lives--;
@@ -341,6 +343,8 @@
         if (dx * dx + dy * dy <= (t.r + 6) * (t.r + 6)) {
           targets.splice(i, 1);
           score++;
+          SFX.play('hit');
+          if (score > 0 && score % 10 === 0) SFX.play('win');
           addSlash(cx, cy);
           const diff = difficultyForScore(score);
           spawnInterval = diff.spawnInterval;
@@ -369,6 +373,7 @@
     function endGame() {
       gameActive = false;
       cancelAnimationFrame(raf);
+      SFX.play('lose');
 
       window.dispatchEvent(new CustomEvent('gameOver', {
         detail: { game: 'tap-ninja', score }

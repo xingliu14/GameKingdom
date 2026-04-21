@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Pixel Runner — GameKingdom</title>
   <meta name="description" content="Endless side-scrolling runner — jump, duck, and dodge your way to a high score!">
+  <script src="../sounds.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -693,6 +694,7 @@
 
   function endGame() {
     state = 'gameover';
+    SFX.play('lose');
     if (score > highScore) {
       highScore = score;
       localStorage.setItem('pxrun_hs', highScore);
@@ -730,6 +732,7 @@
       level = newLv;
       speed = Math.min(3 + (level - 1) * 0.65, 9);
       obsInterval = Math.max(50, 120 - (level - 1) * 12);
+      SFX.play('score');
     }
 
     if (--nextObsTick <= 0) {
@@ -746,7 +749,7 @@
     updateCollectibles();
     checkCollectibles();
 
-    if (checkHit()) endGame();
+    if (checkHit()) { SFX.play('hit'); endGame(); }
   }
 
   function render() {

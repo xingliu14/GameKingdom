@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Brick Blaster — GameKingdom</title>
   <meta name="description" content="Break bricks, collect power-ups, and blast through 5 challenging levels!" />
+  <script src="../sounds.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -458,6 +459,7 @@ function update() {
         score += brickPoints(brick.type) * getMultiplier();
         if (brick.hits >= brickHitsToKill(brick.type)) {
           brick.alive = false;
+          SFX.play('hit');
           spawnPowerup(brick);
           if (brick.type === B_EXPL) triggerExplosion(brick);
         }
@@ -478,6 +480,7 @@ function update() {
     lives--;
     perfectLevel = false;
     shieldActive = false;
+    SFX.play('lose');
     if (lives <= 0) {
       finalScore = score;
       gameState  = 'gameover';
@@ -550,8 +553,10 @@ function update() {
     if (level >= 5) {
       finalScore = score;
       gameState  = 'win';
+      SFX.play('win');
       window.dispatchEvent(new CustomEvent('gameOver', { detail: { game: 'brick-blaster', score: finalScore } }));
     } else {
+      SFX.play('score');
       gameState = 'levelcomplete';
     }
   }

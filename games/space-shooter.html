@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Space Shooter — GameKingdom</title>
   <meta name="description" content="Vertical bullet-hell space shooter. Survive 10 waves of enemies!" />
+  <script src="../sounds.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -819,6 +820,8 @@ function checkCollisions() {
 function killEnemy(e) {
   e.hp = 0;
   score += e.worth;
+  SFX.play('hit');
+  SFX.play('score');
   const colMap = { scout:'#44ff88', cruiser:'#4488ff', bomber:'#ff4444', fighter:'#ffaa00', boss:'#cc44ff', finalBoss:'#ff0066' };
   const col = colMap[e.type] || '#ffffff';
   const cnt = (e.type === 'boss' || e.type === 'finalBoss') ? 30 : 10 + Math.floor(Math.random()*6);
@@ -839,6 +842,7 @@ function hitPlayer() {
   }
   noDamageWave = false;
   lives--;
+  SFX.play('lose');
   spawnExplosion(player.x, player.y, 14, '#ffffff', 70);
   if (lives <= 0) {
     player.dead = true;

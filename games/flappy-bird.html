@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Flappy Bird — GameKingdom</title>
   <meta name="description" content="Tap or press Space to flap through the pipes — how far can you go?" />
+  <script src="../sounds.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -147,6 +148,7 @@
         restartGame();
         return;
       }
+      SFX.play('click');
       bird.vy = FLAP_VELOCITY;
     }
 
@@ -183,6 +185,7 @@
 
     function gameOver() {
       state = 'dead';
+      SFX.play('lose');
       if (score > bestScore) {
         bestScore = score;
         localStorage.setItem('flappy_best', bestScore);
@@ -226,6 +229,7 @@
       // Ground / ceiling collision
       if (bird.y + BIRD_R >= H - GROUND_H || bird.y - BIRD_R <= 0) {
         bird.y = bird.y + BIRD_R >= H - GROUND_H ? H - GROUND_H - BIRD_R : BIRD_R;
+        SFX.play('hit');
         gameOver();
         return;
       }
@@ -241,15 +245,18 @@
         if (!p.passed && p.x + PIPE_WIDTH < BIRD_X - BIRD_R) {
           p.passed = true;
           score++;
+          SFX.play('score');
         }
 
         // Pipe collision — top pipe
         if (circleRect(BIRD_X, bird.y, BIRD_R - 2, p.x, 0, PIPE_WIDTH, p.topH)) {
+          SFX.play('hit');
           gameOver(); return;
         }
         // Pipe collision — bottom pipe
         const botY = p.topH + PIPE_GAP;
         if (circleRect(BIRD_X, bird.y, BIRD_R - 2, p.x, botY, PIPE_WIDTH, H - GROUND_H - botY)) {
+          SFX.play('hit');
           gameOver(); return;
         }
       }
