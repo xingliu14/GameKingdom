@@ -112,6 +112,15 @@ const GAMES = [
 
   // ----- Casual -----
   {
+    id: 'balloons-pop',
+    title: 'Balloons Pop',
+    desc: 'Click rising balloons before they escape! Miss 10 and it\'s game over.',
+    category: 'casual',
+    icon: '🎈',
+    path: 'games/balloons-pop.html',
+    tags: [],
+  },
+  {
     id: 'snake-plus',
     title: 'Snake Plus',
     desc: 'Enhanced Snake with power-ups, game modes, obstacles, and visual effects.',
