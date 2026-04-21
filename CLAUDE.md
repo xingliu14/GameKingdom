@@ -39,3 +39,13 @@ Use the CSS custom properties defined in `styles.css` for visual consistency:
 ## Testing
 
 Open `index.html` directly in a browser — no server needed.
+
+## Deployment
+
+After every update, run the VPS sync so the live server always runs the latest code:
+
+```bash
+./sync-vps.sh
+```
+
+Run this from the repo root after committing any changes.
