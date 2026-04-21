@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Memory Match — GameKingdom</title>
   <meta name="description" content="Flip cards and match all pairs in as few moves as possible." />
+  <script src="../sounds.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -361,6 +362,7 @@
 
       card.el.classList.add('flipped');
       card.el.setAttribute('aria-label', `Card: ${card.icon}`);
+      SFX.play('flip');
       flipped.push(idx);
 
       if (flipped.length === 2) {
@@ -380,6 +382,7 @@
           cards[b].el.classList.add('matched');
           cards[a].el.setAttribute('aria-label', `Matched: ${cards[a].icon}`);
           cards[b].el.setAttribute('aria-label', `Matched: ${cards[b].icon}`);
+          SFX.play('score');
           flipped = [];
           locked = false;
           matched++;
@@ -388,6 +391,7 @@
         }, 400);
       } else {
         // No match — flip back after a short pause
+        SFX.play('wrong');
         setTimeout(() => {
           cards[a].el.classList.remove('flipped');
           cards[b].el.classList.remove('flipped');
@@ -418,6 +422,7 @@
         winMsg.textContent = 'Finished! Can you do better?';
       }
 
+      SFX.play('win');
       winScreen.classList.add('visible');
 
       window.dispatchEvent(new CustomEvent('gameOver', {

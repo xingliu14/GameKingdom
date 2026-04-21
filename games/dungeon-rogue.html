@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dungeon Rogue — GameKingdom</title>
   <meta name="description" content="A turn-based roguelike dungeon crawler with permadeath, 5 floors, and a dragon boss.">
+  <script src="../sounds.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -635,8 +636,10 @@ function calcDamage(atk, def) {
 function playerAttack(enemy) {
   var dmg = calcDamage(state.player.atk, enemy.def);
   enemy.hp -= dmg;
+  SFX.play('hit');
   addMessage('You hit ' + enemy.name + ' for ' + dmg + ' damage!', 'combat');
   if (enemy.hp <= 0) {
+    SFX.play('score');
     addMessage(enemy.name + ' defeated! +' + enemy.xp + ' XP', 'item');
     state.player.xp += enemy.xp;
     state.player.kills++;
@@ -655,6 +658,7 @@ function enemyAttack(enemy) {
   var dmg = calcDamage(enemy.atk, state.player.def);
   state.player.hp -= dmg;
   if (state.player.hp < 0) state.player.hp = 0;
+  SFX.play('hit');
   addMessage(enemy.name + ' hits you for ' + dmg + ' damage!', 'combat');
   if (state.player.hp <= 0) endGame(false);
 }
@@ -682,6 +686,7 @@ function pickupItem(item) {
   for (var i=0;i<state.items.length;i++) if (state.items[i]!==item) filtered.push(state.items[i]);
   state.items = filtered;
   state.player.items++;
+  SFX.play('score');
 
   if (d.type === 'hp') {
     var heal = Math.min(d.value, state.player.maxHp - state.player.hp);
@@ -800,6 +805,7 @@ function tryMove(dx, dy) {
 
   // Move player
   p.x=nx; p.y=ny;
+  SFX.play('move');
 
   // Item?
   var item=null;
@@ -834,6 +840,7 @@ function calcScore() {
 function endGame(won) {
   state.gameOver=true;
   state.won=won;
+  if (won) { SFX.play('win'); } else { SFX.play('lose'); }
   updateVisibility();
   render();
   var score=calcScore();

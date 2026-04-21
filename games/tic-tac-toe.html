@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Tic-Tac-Toe — GameKingdom</title>
   <meta name="description" content="Classic Tic-Tac-Toe — play against a friend or challenge the unbeatable AI!" />
+  <script src="../sounds.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -307,8 +308,10 @@
 
     // ── Core game logic ───────────────────────────────────────────────────────
     function placeMove(idx) {
-      if (!gameActive || board[idx] || aiThinking) return;
+      if (!gameActive || aiThinking) return;
+      if (board[idx]) { SFX.play('wrong'); return; }
       board[idx] = current;
+      SFX.play('click');
       renderBoard();
 
       const result = checkWinner(board);
@@ -352,6 +355,7 @@
     function endRound(result) {
       gameActive = false;
       if (result.winner) {
+        SFX.play('win');
         scores[result.winner]++;
         updateScores();
         highlightWinners(result.line);

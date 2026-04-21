@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tower Defense — GameKingdom</title>
   <meta name="description" content="Build towers and defend against waves of enemies!">
+  <script src="../sounds.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -877,6 +878,7 @@ function moveEnemies(dt) {
     if (e.waypointIdx >= PATH_PX.length - 1) {
       e.alive = false;
       gs.lives = Math.max(0, gs.lives - (e.type==='boss' ? 5 : 1));
+      SFX.play('lose');
       burst(e.x, e.y, C.red, 8);
     }
     if (e.frozen > 0) e.frozen -= dt;
@@ -969,11 +971,13 @@ function hitBullet(b) {
 
 function dealDmg(e, dmg, col) {
   e.hp -= dmg;
+  SFX.play('hit');
   burst(e.x, e.y, col, 4);
   if (e.hp <= 0) {
     e.alive = false;
     gs.gold += e.reward;
     gs.kills++;
+    SFX.play('score');
     burst(e.x, e.y, e.color, 12);
     updateHud();
   }
@@ -1014,6 +1018,7 @@ function checkPhase() {
       if (gs.wave >= gs.maxWaves) {
         doWin();
       } else {
+        SFX.play('win');
         gs.phase = 'between';
         updateHud();
       }

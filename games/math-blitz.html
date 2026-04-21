@@ -441,6 +441,7 @@
     function endGame() {
       clearInterval(timerInterval);
       SFX.play('lose');
+      if (score > 0) SFX.play('win');
       playScreen.style.display = 'none';
       endScreen.style.display  = 'flex';
 

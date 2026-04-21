@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Card Quest — GameKingdom</title>
   <meta name="description" content="A Slay-the-Spire style deck-building card battle RPG. Fight 10 enemies, build your deck, and slay the Dragon!" />
+  <script src="../sounds.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -703,6 +704,7 @@ function newGameState() {
       const blocked = Math.min(e.block || 0, dmg);
       e.block = (e.block || 0) - blocked;
       const actual = dmg - blocked;
+      SFX.play('hit');
       e.hp = Math.max(0, e.hp - actual);
       if (blocked > 0) this.log(`Dealt ${actual} damage (${blocked} blocked by enemy).`, 'damage');
       else this.log(`Dealt ${actual} damage to ${e.name}.`, 'damage');
@@ -912,6 +914,7 @@ function playCard(idx) {
   gs.energy -= cost;
   if (gs.nextFree) gs.nextFree = false;
   gs.hand.splice(idx, 1);
+  SFX.play('flip');
   gs.log(`Played: ${card.name}.`, 'card');
   resolveCard(card, gs, false);
   gs.discard.push(card);
@@ -925,6 +928,7 @@ function resolveCard(card, g, free) {
 function enemyDied() {
   gs.enemy.hp = 0;
   gs.enemiesDefeated++;
+  SFX.play('score');
   gs.log(`${gs.enemy.name} is defeated!`, 'special');
   gs.refreshUI();
 
@@ -969,6 +973,7 @@ function showRewardScreen() {
    WIN / LOSE
 ===================================================== */
 function gameWin() {
+  SFX.play('win');
   const score = gs.enemiesDefeated * 100 + gs.playerHp * 5;
   window.dispatchEvent(new CustomEvent('gameOver', { detail: { game: 'card-quest', score } }));
   document.getElementById('winScore').textContent = `Score: ${score}`;
@@ -978,6 +983,7 @@ function gameWin() {
 }
 
 function gameOver() {
+  SFX.play('lose');
   const score = gs.enemiesDefeated * 100 + gs.playerHp * 5;
   window.dispatchEvent(new CustomEvent('gameOver', { detail: { game: 'card-quest', score } }));
   document.getElementById('gameOverScore').textContent = `Score: ${score}`;
