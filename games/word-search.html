@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Word Search — GameKingdom</title>
   <meta name="description" content="Find hidden words in the letter grid — horizontally, vertically, and diagonally!" />
+  <script src="../sounds.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -499,6 +500,7 @@
     if (matched) {
       const idx = placements.indexOf(matched);
       foundWords.add(matched.word);
+      SFX.play('score');
       // Clear drag before applying found
       clearDrag();
       applyFoundClass(matched.cells, idx % 12);
@@ -591,6 +593,7 @@
   function checkCompletion() {
     if (foundWords.size < placements.length) return;
     stopTimer();
+    SFX.play('win');
     const t = formatTime(timerSeconds);
     completionTimeEl.textContent = t;
     completionSubEl.textContent = `You found all ${placements.length} words in ${currentTheme.name}!`;

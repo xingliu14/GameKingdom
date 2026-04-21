@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Word Scramble — GameKingdom</title>
   <meta name="description" content="Unscramble the jumbled letters to form the hidden word." />
+  <script src="../sounds.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -340,7 +341,7 @@
 
   // ── Load next word ─────────────────────────────────────────────────────────
   function nextWord() {
-    if (wordsQueue.length === 0) return endGame();
+    if (wordsQueue.length === 0) { SFX.play('win'); return endGame(); }
     [currentWord, currentDiff] = wordsQueue.shift();
     scrambled = scramble(currentWord);
     hintRevealed = 0;
@@ -445,11 +446,13 @@
       feedbackEl.textContent = `✓ +${earned} pts${streak >= 3 ? ' 🔥 x' + streak : ''}`;
       feedbackEl.style.color = 'var(--success)';
 
+      SFX.play('score');
       guessInput.classList.add('correct-flash');
       setTimeout(() => { guessInput.classList.remove('correct-flash'); nextWord(); }, 400);
     } else {
       feedbackEl.textContent = '✗ Try again!';
       feedbackEl.style.color = 'var(--danger)';
+      SFX.play('wrong');
       guessInput.classList.add('shake');
       setTimeout(() => guessInput.classList.remove('shake'), 400);
       guessInput.value = '';
@@ -489,7 +492,8 @@
   skipBtn.addEventListener('click', skipWord);
 
   guessInput.addEventListener('keydown', e => {
-    if (e.key === 'Enter') submitGuess();
+    if (e.key === 'Enter') { submitGuess(); return; }
+    if (e.key.length === 1) SFX.play('click');
   });
   </script>
 
