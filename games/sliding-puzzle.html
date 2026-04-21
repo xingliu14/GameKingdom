@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Sliding Puzzle — GameKingdom</title>
   <meta name="description" content="Rearrange the scrambled tiles back into order." />
+  <script src="../sounds.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -202,6 +203,7 @@
       tiles[blank] = tiles[idx];
       tiles[idx] = 0;
       moves++;
+      SFX.play('move');
       updateHud();
       renderBoard();
       if (isSolved()) onWin();
@@ -209,6 +211,7 @@
 
     function onWin() {
       gameActive = false;
+      SFX.play('win');
       winDetail.textContent = `Completed in ${moves} move${moves !== 1 ? 's' : ''}.`;
       winMsg.classList.add('visible');
       shuffleBtn.style.display = 'none';

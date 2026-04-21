@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Bubble Burst — GameKingdom</title>
   <meta name="description" content="Aim, shoot, and pop clusters of bubbles in this colorful puzzle shooter!">
+  <script src="../sounds.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -1093,6 +1094,7 @@ function attachBubble(px, py, bubble) {
   // After queuing pops, find floating (these will be processed after animations)
   // We schedule a deferred floating check
   if (totalPopped > 0) {
+    SFX.play('hit');
     setTimeout(() => {
       const floating = findFloating();
       let fallScore = 0;
@@ -1107,7 +1109,10 @@ function attachBubble(px, py, bubble) {
 
       const popScore = calcPopScore(totalPopped) * comboCount;
       score += popScore;
-      if (popScore > 0) showComboText(px, py, popScore, comboCount);
+      if (popScore > 0) {
+        SFX.play('score');
+        showComboText(px, py, popScore, comboCount);
+      }
       updateHUD();
       checkLevelComplete();
     }, 200);
@@ -1184,6 +1189,7 @@ function checkLevelComplete() {
     }
   }
   if (!hasBubbles) {
+    SFX.play('win');
     state = 'levelEnd';
     levelBadge.textContent = `Level ${level} Complete!`;
     levelScoreEl.textContent = score.toLocaleString();
@@ -1192,6 +1198,7 @@ function checkLevelComplete() {
 }
 
 function endGame() {
+  SFX.play('lose');
   state = 'gameOver';
   finalScoreEl.textContent = score.toLocaleString();
   gameOverOverlay.classList.remove('hidden');
