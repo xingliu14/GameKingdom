@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Balloons Pop — GameKingdom</title>
+  <meta name="description" content="Pop rising balloons before they escape! Click fast to rack up points." />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0f0f13; --surface: #1a1a24; --border: #2e2e3e;
+      --accent: #7c5cfc; --text: #e8e8f0; --text-dim: #888899;
+    }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100dvh; display: flex; flex-direction: column;
+      user-select: none;
+    }
+    a { color: var(--accent); }
+
+    .game-nav {
+      padding: 12px 16px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 12px;
+    }
+    .back-link { font-size: .9rem; text-decoration: none; }
+    .back-link:hover { text-decoration: underline; }
+    .game-nav h1 { font-size: 1.1rem; font-weight: 700; }
+
+    #gameContainer {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: flex-start;
+      padding: 16px; gap: 12px;
+    }
+
+    #hud {
+      display: flex; align-items: center; justify-content: space-between;
+      width: 100%; max-width: 480px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; padding: 8px 16px;
+      font-size: 0.85rem; gap: 12px;
+    }
+    .hud-item { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+    .hud-label { color: var(--text-dim); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    .hud-value { font-weight: 700; font-size: 1rem; color: var(--accent); }
+
+    #arena {
+      position: relative;
+      width: 480px; max-width: 100%;
+      height: 520px;
+      background: linear-gradient(180deg, #0d1b2a 0%, #1a2744 60%, #0f0f13 100%);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      cursor: crosshair;
+    }
+
+    .balloon {
+      position: absolute;
+      width: 54px;
+      height: 66px;
+      cursor: pointer;
+      transition: transform 0.08s;
+      filter: drop-shadow(0 2px 6px rgba(0,0,0,0.5));
+    }
+    .balloon:hover { transform: scale(1.12); }
+    .balloon svg { width: 100%; height: 100%; }
+
+    .pop-text {
+      position: absolute;
+      font-weight: 800;
+      font-size: 1.1rem;
+      color: #fff;
+      pointer-events: none;
+      animation: floatUp 0.65s ease-out forwards;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.7);
+    }
+    @keyframes floatUp {
+      0%   { opacity: 1; transform: translateY(0) scale(1); }
+      100% { opacity: 0; transform: translateY(-50px) scale(1.4); }
+    }
+
+    #overlay {
+      position: absolute; inset: 0;
+      background: rgba(0,0,0,0.75);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 16px; border-radius: 12px;
+    }
+    #overlay h2 { font-size: 2rem; font-weight: 800; color: var(--text); }
+    #overlay p  { color: var(--text-dim); font-size: 0.95rem; }
+    #overlay .score-display { font-size: 1.5rem; color: var(--accent); font-weight: 700; }
+    #startBtn {
+      padding: 10px 32px; font-size: 1rem; font-weight: 700;
+      background: var(--accent); color: #fff;
+      border: none; border-radius: 8px; cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    #startBtn:hover { opacity: 0.85; }
+
+    #missFlash {
+      position: absolute; inset: 0;
+      background: rgba(255,60,60,0.18);
+      border-radius: 12px;
+      pointer-events: none;
+      opacity: 0;
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="game-nav">
+    <a href="../index.html" class="back-link">← GameKingdom</a>
+    <h1>Balloons Pop</h1>
+  </nav>
+
+  <div id="gameContainer">
+    <div id="hud">
+      <div class="hud-item">
+        <span class="hud-label">Score</span>
+        <span class="hud-value" id="scoreVal">0</span>
+      </div>
+      <div class="hud-item">
+        <span class="hud-label">Time</span>
+        <span class="hud-value" id="timeVal">30</span>
+      </div>
+      <div class="hud-item">
+        <span class="hud-label">Missed</span>
+        <span class="hud-value" id="missVal">0 / 10</span>
+      </div>
+      <div class="hud-item">
+        <span class="hud-label">Level</span>
+        <span class="hud-value" id="levelVal">1</span>
+      </div>
+    </div>
+
+    <div id="arena">
+      <div id="missFlash"></div>
+      <div id="overlay">
+        <h2>🎈 Balloons Pop</h2>
+        <p>Click balloons before they escape!</p>
+        <p style="color:var(--text-dim);font-size:0.8rem">Miss 10 balloons and it's game over.</p>
+        <button id="startBtn">Play</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const arena     = document.getElementById('arena');
+    const overlay   = document.getElementById('overlay');
+    const startBtn  = document.getElementById('startBtn');
+    const scoreVal  = document.getElementById('scoreVal');
+    const timeVal   = document.getElementById('timeVal');
+    const missVal   = document.getElementById('missVal');
+    const levelVal  = document.getElementById('levelVal');
+    const missFlash = document.getElementById('missFlash');
+
+    const COLORS = [
+      ['#ff4d6d','#ff8fa3'],  // red
+      ['#4cc9f0','#90e0ef'],  // cyan
+      ['#f8961e','#ffd166'],  // orange
+      ['#43aa8b','#90be6d'],  // green
+      ['#9d4edd','#c77dff'],  // purple
+      ['#f72585','#ff85b3'],  // pink
+      ['#ffd60a','#ffe566'],  // yellow
+    ];
+
+    const MAX_MISS = 10;
+    const GAME_TIME = 60;
+
+    let balloons = [];
+    let score = 0;
+    let missed = 0;
+    let timeLeft = GAME_TIME;
+    let level = 1;
+    let running = false;
+    let animFrame = null;
+    let spawnTimer = null;
+    let countdownTimer = null;
+    let lastTime = 0;
+    let nextBalloonId = 0;
+
+    function getArenaSize() {
+      return { w: arena.clientWidth, h: arena.clientHeight };
+    }
+
+    function spawnBalloon() {
+      if (!running) return;
+      const { w, h } = getArenaSize();
+      const bw = 54, bh = 66;
+      const color = COLORS[Math.floor(Math.random() * COLORS.length)];
+      const speedBase = 40 + level * 12;
+      const speed = speedBase + Math.random() * 30;
+      const x = Math.random() * (w - bw);
+      const id = nextBalloonId++;
+
+      const el = document.createElement('div');
+      el.className = 'balloon';
+      el.style.left = x + 'px';
+      el.style.top  = (h + 10) + 'px';
+      el.dataset.id = id;
+
+      const points = Math.max(1, Math.floor(speed / 10));
+      const drift  = (Math.random() - 0.5) * 20;
+
+      el.innerHTML = makeBalloonSVG(color[0], color[1]);
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        popBalloon(id, el, points);
+      });
+      arena.appendChild(el);
+
+      balloons.push({ id, el, x, y: h + 10, speed, drift, points, bw, bh });
+    }
+
+    function makeBalloonSVG(fill, shine) {
+      return `<svg viewBox="0 0 54 66" xmlns="http://www.w3.org/2000/svg">
+        <ellipse cx="27" cy="28" rx="22" ry="26" fill="${fill}"/>
+        <ellipse cx="19" cy="16" rx="6" ry="4" fill="${shine}" opacity="0.55"/>
+        <path d="M27 54 Q29 58 27 62 Q25 58 27 54Z" fill="${fill}"/>
+        <rect x="26" y="53" width="2" height="2" fill="${fill}" rx="1"/>
+      </svg>`;
+    }
+
+    function popBalloon(id, el, points) {
+      if (!running) return;
+      const idx = balloons.findIndex(b => b.id === id);
+      if (idx === -1) return;
+
+      const rect = el.getBoundingClientRect();
+      const arenaRect = arena.getBoundingClientRect();
+      const cx = rect.left - arenaRect.left + rect.width / 2;
+      const cy = rect.top  - arenaRect.top;
+
+      balloons.splice(idx, 1);
+      el.remove();
+
+      score += points;
+      scoreVal.textContent = score;
+
+      showPopText(cx, cy, '+' + points);
+    }
+
+    function showPopText(x, y, text) {
+      const t = document.createElement('div');
+      t.className = 'pop-text';
+      t.textContent = text;
+      t.style.left = (x - 18) + 'px';
+      t.style.top  = (y - 10) + 'px';
+      arena.appendChild(t);
+      t.addEventListener('animationend', () => t.remove());
+    }
+
+    function flashMiss() {
+      missFlash.style.opacity = '1';
+      clearTimeout(missFlash._t);
+      missFlash._t = setTimeout(() => { missFlash.style.opacity = '0'; }, 220);
+    }
+
+    function updateBalloons(dt) {
+      const { h } = getArenaSize();
+      for (let i = balloons.length - 1; i >= 0; i--) {
+        const b = balloons[i];
+        b.y -= b.speed * dt;
+        b.x += b.drift * dt;
+        b.el.style.top  = b.y + 'px';
+        b.el.style.left = b.x + 'px';
+
+        if (b.y + b.bh < -10) {
+          b.el.remove();
+          balloons.splice(i, 1);
+          missed++;
+          missVal.textContent = missed + ' / ' + MAX_MISS;
+          flashMiss();
+          if (missed >= MAX_MISS) endGame();
+        }
+      }
+    }
+
+    function gameLoop(ts) {
+      if (!running) return;
+      const dt = Math.min((ts - lastTime) / 1000, 0.1);
+      lastTime = ts;
+      updateBalloons(dt);
+      animFrame = requestAnimationFrame(gameLoop);
+    }
+
+    function startSpawning() {
+      const interval = Math.max(400, 1200 - level * 100);
+      spawnTimer = setTimeout(() => {
+        spawnBalloon();
+        if (running) startSpawning();
+      }, interval + Math.random() * 300);
+    }
+
+    function startGame() {
+      score = 0; missed = 0; timeLeft = GAME_TIME; level = 1;
+      balloons.forEach(b => b.el.remove());
+      balloons = [];
+      nextBalloonId = 0;
+
+      scoreVal.textContent = '0';
+      timeVal.textContent  = GAME_TIME;
+      missVal.textContent  = '0 / ' + MAX_MISS;
+      levelVal.textContent = '1';
+
+      overlay.style.display = 'none';
+      running = true;
+      lastTime = performance.now();
+      animFrame = requestAnimationFrame(gameLoop);
+      startSpawning();
+
+      countdownTimer = setInterval(() => {
+        if (!running) return;
+        timeLeft--;
+        timeVal.textContent = timeLeft;
+        level = Math.min(8, 1 + Math.floor((GAME_TIME - timeLeft) / 10));
+        levelVal.textContent = level;
+        if (timeLeft <= 0) endGame();
+      }, 1000);
+    }
+
+    function endGame() {
+      running = false;
+      cancelAnimationFrame(animFrame);
+      clearTimeout(spawnTimer);
+      clearInterval(countdownTimer);
+      balloons.forEach(b => b.el.remove());
+      balloons = [];
+
+      overlay.innerHTML = `
+        <h2>Game Over</h2>
+        <div class="score-display">Score: ${score}</div>
+        <p>Level reached: ${level}</p>
+        <p>Balloons missed: ${missed}</p>
+        <button id="startBtn">Play Again</button>
+      `;
+      overlay.style.display = 'flex';
+      overlay.querySelector('#startBtn').addEventListener('click', startGame);
+
+      window.dispatchEvent(new CustomEvent('gameOver', {
+        detail: { game: 'balloons-pop', score }
+      }));
+    }
+
+    startBtn.addEventListener('click', startGame);
+  </script>
+
+</body>
+</html>

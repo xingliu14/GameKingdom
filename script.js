@@ -213,6 +213,7 @@ const GAMES = [
   { id: '2048',         title: '2048',         desc: 'Slide and merge tiles to reach the elusive 2048 tile.',  category: 'puzzle', icon: '🔢', path: 'games/2048.html',         tags: ['merge', 'numbers', 'sliding'] },
   { id: 'word-search',  title: 'Word Search',  desc: 'Hunt for hidden words in a jumbled letter grid.',       category: 'word',   icon: '🔍', path: 'games/word-search.html',  tags: ['words', 'grid', 'search'] },
   { id: 'flappy-bird',  title: 'Flappy Bird',  desc: "Tap to flap through pipes — one wrong move and it's over!", category: 'action', icon: '🐦', path: 'games/flappy-bird.html', tags: ['flappy', 'tap', 'pipes'] },
+  { id: 'balloons-pop', title: 'Balloons Pop', desc: 'Pop rising balloons before they escape! Miss 10 and it\'s game over.', category: 'casual', icon: '🎈', path: 'games/balloons-pop.html', tags: ['balloons', 'pop', 'click'] },
 ];
 
 // =====================================================
