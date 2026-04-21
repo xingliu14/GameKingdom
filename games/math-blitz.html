@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Math Blitz — GameKingdom</title>
   <meta name="description" content="60 seconds of rapid-fire arithmetic. How many can you solve?" />
+  <script src="../sounds.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -390,9 +391,11 @@
         streak++;
         if (streak > bestStreak) bestStreak = streak;
         score += streak > 1 ? streak : 1; // streak bonus
+        SFX.play('score');
         flashFeedback('correct', streak > 1 ? `+${streak} streak!` : '✓ Correct!');
       } else {
         streak = 0;
+        SFX.play('wrong');
         flashFeedback('wrong', `✗ Answer: ${correctAnswer}`);
       }
 
@@ -437,6 +440,7 @@
 
     function endGame() {
       clearInterval(timerInterval);
+      SFX.play('lose');
       playScreen.style.display = 'none';
       endScreen.style.display  = 'flex';
 

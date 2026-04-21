@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Hangman — GameKingdom</title>
   <meta name="description" content="Guess the mystery word one letter at a time. Six wrong guesses and it's over!" />
+  <script src="../sounds.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -363,6 +364,9 @@
       if (!word.includes(ch)) {
         wrongCount++;
         wrongCountEl.textContent = wrongCount;
+        SFX.play('wrong');
+      } else {
+        SFX.play('click');
       }
 
       const allRevealed = [...word].every(c => guessed.has(c));
@@ -376,6 +380,7 @@
         gameOver = true;
         scores.wins++;
         updateScores();
+        SFX.play('win');
         statusEl.textContent = 'You got it! 🎉';
         statusEl.className = 'status-msg win';
         hintEl.textContent = hint;
@@ -386,6 +391,7 @@
         gameOver = true;
         scores.losses++;
         updateScores();
+        SFX.play('lose');
         statusEl.textContent = 'Game over! The word was:';
         statusEl.className = 'status-msg lose';
         hintEl.textContent = hint;
