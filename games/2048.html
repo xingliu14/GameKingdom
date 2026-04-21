@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>2048 — GameKingdom</title>
   <meta name="description" content="Slide and merge tiles to reach 2048 in this classic number puzzle." />
+  <script src="../sounds.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -475,6 +476,9 @@
       const { newGrid: ng, gained, mergedPositions, moved } = applyMove(grid, dir);
       if (!moved) return;
 
+      SFX.play('move');
+      if (mergedPositions.length > 0) SFX.play('score');
+
       grid   = ng;
       score += gained;
       if (score > best) {
@@ -489,6 +493,7 @@
       // Show win screen once when 2048 is reached
       if (!won && maxValue(grid) >= 2048) {
         won = true;
+        SFX.play('win');
         setTimeout(() => winOverlay.classList.add('visible'), 250);
         return;
       }
@@ -496,6 +501,7 @@
       // Check loss
       if (!hasMovesLeft(grid)) {
         gameOver = true;
+        SFX.play('lose');
         loseMsgEl.textContent = 'Final score: ' + score.toLocaleString();
         setTimeout(() => loseOverlay.classList.add('visible'), 250);
         window.dispatchEvent(new CustomEvent('gameOver', {

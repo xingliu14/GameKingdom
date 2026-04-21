@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Chess — GameKingdom</title>
   <meta name="description" content="Play chess against a minimax AI or a friend locally." />
+  <script src="../sounds.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -901,6 +902,8 @@ function doMove(mv){
   if(u.cap){if(pSide(u.cap)===B)whiteCap.push(u.cap);else blackCap.push(u.cap);}
   if(u.epCap){if(pSide(u.epCap)===B)whiteCap.push(u.epCap);else blackCap.push(u.epCap);}
 
+  if(u.cap||u.epCap){SFX.play('hit');}else{SFX.play('move');}
+
   // Algebraic
   const algSt={board:gs.board,turn:gs.turn,cWK:gs.cWK,cWQ:gs.cWQ,cBK:gs.cBK,cBQ:gs.cBQ,ep:gs.ep,halfMove:gs.halfMove,fullMove:gs.fullMove};
   const alg=moveToAlg(stSnap.board,mv,algSt);
@@ -950,6 +953,7 @@ function endGame(wasCheck){
   const winner=enemy(gs.turn);
   let title,msg;
   if(wasCheck){
+    SFX.play('win');
     title=winner===W?'♔ White wins!':'♚ Black wins!';
     msg='by Checkmate';
   } else {
