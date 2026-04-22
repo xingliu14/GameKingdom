@@ -222,6 +222,15 @@ const GAMES = [
   { id: '2048',         title: '2048',         desc: 'Slide and merge tiles to reach the elusive 2048 tile.',  category: 'puzzle', icon: '🔢', path: 'games/2048.html',         tags: ['merge', 'numbers', 'sliding'] },
   { id: 'word-search',  title: 'Word Search',  desc: 'Hunt for hidden words in a jumbled letter grid.',       category: 'word',   icon: '🔍', path: 'games/word-search.html',  tags: ['words', 'grid', 'search'] },
   { id: 'flappy-bird',  title: 'Flappy Bird',  desc: "Tap to flap through pipes — one wrong move and it's over!", category: 'action', icon: '🐦', path: 'games/flappy-bird.html', tags: ['flappy', 'tap', 'pipes'] },
+  {
+    id: 'tetris',
+    title: 'Tetris',
+    desc: 'Stack falling tetrominoes, clear lines, and survive as long as you can. A timeless puzzle classic.',
+    category: 'puzzle',
+    icon: '🟦',
+    path: 'games/tetris.html',
+    tags: ['tetris', 'blocks', 'puzzle', 'classic'],
+  },
 ];
 
 // =====================================================
