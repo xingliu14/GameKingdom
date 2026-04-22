@@ -1,0 +1,29 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy via rsync over SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_HOST: 89.167.72.63
+          VPS_USER: root
+          REMOTE_DIR: /var/www/gamekingdom
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "$VPS_HOST" >> ~/.ssh/known_hosts
+          rsync -avz --delete \
+            --exclude='.git/' \
+            --exclude='*.md' \
+            --exclude='deploy/' \
+            --exclude='.github/' \
+            ./ "$VPS_USER@$VPS_HOST:$REMOTE_DIR/"
