@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wordle — GameKingdom</title>
+  <meta name="description" content="Guess the 5-letter word in 6 tries. Green means right spot, yellow means wrong spot." />
+  <script src="../sounds.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0f0f13; --surface: #1a1a24; --surface2: #22222f; --border: #2e2e3e;
+      --accent: #7c5cfc; --text: #e8e8f0; --text-dim: #888899;
+      --green: #22c55e; --yellow: #eab308; --gray: #3f3f4e;
+    }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100dvh; display: flex; flex-direction: column;
+      user-select: none;
+    }
+    a { color: var(--accent); }
+
+    .game-nav {
+      padding: 12px 16px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 12px;
+    }
+    .back-link { font-size: .9rem; text-decoration: none; }
+    .back-link:hover { text-decoration: underline; }
+    .game-nav h1 { font-size: 1.1rem; font-weight: 700; }
+
+    #gameContainer {
+      flex: 1; display: flex; flex-direction: column; align-items: center;
+      padding: 14px 16px 32px; gap: 14px;
+    }
+
+    .daily-badge {
+      font-size: .72rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .08em; color: var(--text-dim); text-align: center;
+    }
+
+    #message {
+      font-size: .88rem; font-weight: 700; min-height: 1.3rem;
+      color: transparent; text-align: center; transition: color .15s;
+    }
+    #message.show { color: var(--text); }
+
+    /* ── Grid ────────────────────────────────────────────────────────── */
+    #grid { display: flex; flex-direction: column; gap: 6px; }
+    .grid-row { display: flex; gap: 6px; }
+
+    .tile {
+      width: clamp(50px, 13vw, 64px);
+      height: clamp(50px, 13vw, 64px);
+      border: 2px solid var(--border);
+      border-radius: 4px;
+      position: relative;
+      perspective: 300px;
+    }
+    .tile.filled { border-color: #55556a; }
+
+    .tile-inner {
+      position: absolute; inset: 0;
+      transform-style: preserve-3d;
+      transition: transform .5s ease;
+      border-radius: 3px;
+    }
+    .tile-front, .tile-back {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: clamp(1.4rem, 4.5vw, 1.8rem);
+      font-weight: 800;
+      border-radius: 3px;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+    }
+    .tile-back { transform: rotateX(180deg); color: #fff; }
+    .tile-inner.flip { transform: rotateX(180deg); }
+    .tile-inner.green .tile-back  { background: var(--green); }
+    .tile-inner.yellow .tile-back { background: var(--yellow); }
+    .tile-inner.gray .tile-back   { background: var(--gray); }
+
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      20%,60%  { transform: translateX(-7px); }
+      40%,80%  { transform: translateX(7px); }
+    }
+    .grid-row.shake { animation: shake .38s ease; }
+
+    @keyframes pop {
+      0%   { transform: scale(1); }
+      50%  { transform: scale(1.14); }
+      100% { transform: scale(1); }
+    }
+    .tile.pop { animation: pop .13s ease; }
+
+    /* ── Keyboard ────────────────────────────────────────────────────── */
+    #keyboard { display: flex; flex-direction: column; gap: 6px; align-items: center; }
+    .key-row { display: flex; gap: 5px; }
+    .key {
+      height: clamp(40px, 10vw, 56px);
+      min-width: clamp(28px, 7.5vw, 40px);
+      padding: 0 4px;
+      border: none; border-radius: 4px;
+      background: var(--surface2); color: var(--text);
+      font-size: clamp(.68rem, 2.3vw, .88rem); font-weight: 700;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background .15s, color .15s;
+    }
+    .key.wide { min-width: clamp(46px, 11vw, 60px); font-size: clamp(.6rem, 1.8vw, .75rem); }
+    .key:active { filter: brightness(.8); }
+    .key.green  { background: var(--green);  color: #fff; }
+    .key.yellow { background: var(--yellow); color: #fff; }
+    .key.gray   { background: var(--gray);   color: var(--text-dim); }
+
+    /* ── Overlay ────────────────────────────────────────────────────── */
+    #overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.75);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 10;
+    }
+    #overlay.hidden { display: none; }
+    .overlay-box {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 16px; padding: 32px 40px;
+      text-align: center; display: flex; flex-direction: column;
+      gap: 14px; max-width: 360px; width: 90%;
+    }
+    .overlay-emoji  { font-size: 3rem; }
+    .overlay-title  { font-size: 1.6rem; font-weight: 800; }
+    .overlay-word   { font-size: 1.3rem; font-weight: 800; letter-spacing: .12em; color: var(--accent); }
+    .overlay-sub    { font-size: .88rem; color: var(--text-dim); }
+    .btn-row        { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+    .action-btn {
+      padding: 10px 22px; border-radius: 8px;
+      border: 1px solid var(--border); background: var(--surface2);
+      color: var(--text); font-size: .88rem; font-weight: 700;
+      cursor: pointer; transition: background .15s;
+    }
+    .action-btn:hover  { background: #2a2a3e; }
+    .action-btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .action-btn.primary:hover { background: #6a4de0; }
+
+    .standalone-btn-row { display: flex; justify-content: center; }
+  </style>
+</head>
+<body>
+
+  <nav class="game-nav">
+    <a href="../index.html" class="back-link">← GameKingdom</a>
+    <h1>Wordle</h1>
+  </nav>
+
+  <div id="gameContainer">
+    <div class="daily-badge" id="dailyBadge">Today's word</div>
+    <div id="message"></div>
+    <div id="grid"></div>
+    <div id="keyboard"></div>
+    <div class="standalone-btn-row">
+      <button class="action-btn primary" id="newGameBtn">New Game</button>
+    </div>
+  </div>
+
+  <div id="overlay" class="hidden">
+    <div class="overlay-box">
+      <div class="overlay-emoji" id="overlayEmoji"></div>
+      <div class="overlay-title"  id="overlayTitle"></div>
+      <div class="overlay-word"   id="overlayWord"></div>
+      <div class="overlay-sub"    id="overlaySub"></div>
+      <div class="btn-row">
+        <button class="action-btn primary" id="overlayNewGame">New Game</button>
+        <button class="action-btn"         id="overlayClose">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ── Word list (all 5 letters) ─────────────────────────────────────────────
+    const WORDS = [
+      'about','above','abuse','actor','acute','admit','adopt','adult','after','again',
+      'agent','agree','ahead','alarm','album','alert','alien','align','alike','alive',
+      'alley','allow','alone','along','alter','angel','anger','angle','angry','ankle',
+      'apart','apple','apply','apron','arena','argue','arise','armed','armor','aroma',
+      'array','arrow','aside','asset','atlas','attic','audio','avail','avoid','awake',
+      'award','aware','awful','badly','baker','based','basic','beach','beard','beast',
+      'began','begin','being','below','bench','berry','birch','birth','black','blade',
+      'blame','bland','blank','blast','blaze','bleak','bleed','blend','bless','blind',
+      'block','blood','bloom','blown','board','bonus','boost','booth','bound','boxer',
+      'brace','brain','brand','brave','bread','break','brick','bride','brief','bring',
+      'brisk','broad','broke','brook','brown','brush','build','built','bulge','burst',
+      'cabin','camel','candy','carry','catch','cause','cedar','chain','chair','chaos',
+      'charm','chart','chase','cheap','check','cheek','chess','chest','chief','child',
+      'choir','chord','claim','clamp','clash','class','clean','clear','clerk','click',
+      'cliff','climb','cling','clock','close','cloud','coach','coast','cobra','comet',
+      'comic','coral','count','court','cover','crack','craft','crash','crazy','creek',
+      'crime','crisp','cross','crowd','crown','cruel','crush','curly','curve','cycle',
+      'daily','dance','dealt','debut','decay','decor','delta','dense','depot','depth',
+      'derby','deter','devil','digit','dingo','disco','dodge','doing','doubt','dough',
+      'draft','drain','drama','drank','drape','drawn','dream','dress','dried','drift',
+      'drill','drink','drive','drool','drown','dusty','eagle','early','earth','eight',
+      'elite','empty','enemy','enjoy','enter','equal','error','essay','event','every',
+      'exact','exist','extra','fable','faint','faith','false','fancy','fault','feast',
+      'fetch','fever','fiber','field','fifth','fifty','fight','final','first','fixed',
+      'flame','flank','flask','float','flock','flora','floor','floss','flour','flute',
+      'focus','foggy','folks','force','forge','forth','forty','forum','found','frame',
+      'frank','fraud','fresh','front','frost','froze','fruit','fully','funny','gauge',
+      'given','glare','glass','gleam','globe','gloom','glory','glove','going','grace',
+      'grade','grain','grand','grant','grape','grasp','grass','grate','grave','great',
+      'green','greet','grief','grill','grind','groan','groom','gross','grout','grove',
+      'growl','grown','guard','guess','guide','guild','guise','gusto','happy','harsh',
+      'haste','haunt','haven','heart','heavy','hedge','heist','hello','hence','herbs',
+      'hinge','hippo','hoist','holly','honor','hotel','human','humor','husky','ideal',
+      'image','indie','inner','input','inter','intro','irony','ivory','jewel','joint',
+      'judge','juice','juicy','jumbo','knack','kneel','knife','knock','known','label',
+      'large','laser','later','laugh','layer','learn','lease','least','leave','ledge',
+      'legal','level','light','limit','liver','local','lodge','logic','loose','lover',
+      'lower','lucky','lunar','lyric','magic','maple','march','match','mayor','media',
+      'merge','metal','minor','minus','mirth','model','money','month','moral','motor',
+      'mount','mouse','mouth','moved','movie','muddy','music','naive','nerve','never',
+      'newly','night','noble','noisy','north','noted','novel','nurse','nymph','ocean',
+      'offer','often','olive','onset','optic','order','other','outer','oxide','ozone',
+      'paint','panel','panic','paper','party','patch','pause','peace','pearl','perch',
+      'phase','photo','piano','piece','pilot','pinch','pixel','pizza','place','plain',
+      'plane','plant','plaza','plead','pluck','point','polar','poker','polka','poppy',
+      'porch','power','press','price','pride','prime','print','prior','prize','probe',
+      'proof','prose','proud','prove','prowl','pulse','pupil','quest','queue','quick',
+      'quiet','quota','quote','radar','radio','raise','rally','ranch','range','rapid',
+      'ratio','reach','ready','realm','rebel','reign','relax','relay','relic','remix',
+      'repay','repel','resin','reset','rider','ridge','right','rigid','risky','rival',
+      'river','robin','rocky','rodeo','rouge','round','route','royal','rugby','ruler',
+      'rumor','rural','rusty','sadly','saint','salad','sauce','scale','scope','score',
+      'scout','scrub','sense','serve','setup','seven','shade','shaft','shake','shall',
+      'shame','shape','share','sharp','sheer','sheet','shelf','shell','shift','shirt',
+      'shock','shore','short','sight','since','siren','skill','slate','sleek','sleep',
+      'slice','slide','slope','sloth','smart','smash','smell','smile','smoke','solar',
+      'solve','sorry','south','space','spark','speak','spear','speed','spend','spice',
+      'spill','spine','spoil','spoon','sport','spray','squad','stack','staff','stage',
+      'stake','stale','stand','stark','start','state','steal','steam','steel','steep',
+      'steer','stern','stick','stiff','still','stock','stomp','stone','stood','store',
+      'storm','story','stove','strap','stray','strip','stuck','study','style','sugar',
+      'suite','sunny','super','swamp','swear','sweep','sweet','swept','swift','swirl',
+      'swoop','sword','syrup','table','tally','talon','taste','teach','tense','tenth',
+      'theft','theme','there','thick','thing','think','third','thorn','those','three',
+      'threw','throw','thumb','tiger','timer','tired','titan','today','token','torch',
+      'total','touch','tough','tower','toxic','trace','track','trade','trail','train',
+      'trait','tramp','trash','treat','trend','trial','tribe','trick','tried','troop',
+      'trove','truce','truly','trust','truth','tulip','tumor','tuner','twice','twist',
+      'ultra','under','union','unite','until','upper','upset','urban','usage','vapor',
+      'vault','verse','video','viola','viral','virus','vista','vital','vivid','vocal',
+      'voice','voter','wager','waste','watch','water','weary','weave','wedge','weigh',
+      'whale','wheat','wheel','where','which','while','whirl','white','whole','whose',
+      'wider','windy','witch','woman','women','wrath','wrist','write','wrote','yacht',
+      'yearn','young','youth','zebra','zoned',
+    ].filter(w => w.length === 5);
+
+    // Deduplicate
+    const WORDS_UNIQUE = [...new Set(WORDS)];
+    const WORD_SET = new Set(WORDS_UNIQUE);
+
+    // ── Daily word (same for everyone on the same calendar day) ──────────────
+    function getDailyWord() {
+      const now = new Date();
+      const epoch = new Date(2024, 0, 1); // Jan 1 2024
+      const dayIndex = Math.floor((now - epoch) / 86400000);
+      return WORDS_UNIQUE[((dayIndex % WORDS_UNIQUE.length) + WORDS_UNIQUE.length) % WORDS_UNIQUE.length];
+    }
+
+    // ── Constants ─────────────────────────────────────────────────────────────
+    const ROWS = 6, COLS = 5;
+    const KEY_ROWS = ['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM'];
+    const WIN_MSGS  = ['Genius!', 'Magnificent!', 'Impressive!', 'Splendid!', 'Great!', 'Phew!'];
+    const COLOR_RANK = { green: 3, yellow: 2, gray: 1 };
+    const FLIP_DELAY = 320; // ms between each tile flip
+    const FLIP_DUR   = 500; // ms CSS flip transition duration
+
+    // ── State ─────────────────────────────────────────────────────────────────
+    let targetWord, currentRow, currentTile, currentGuess;
+    let letterStates, gameOver, revealing;
+
+    // ── DOM refs ──────────────────────────────────────────────────────────────
+    const gridEl      = document.getElementById('grid');
+    const keyboardEl  = document.getElementById('keyboard');
+    const messageEl   = document.getElementById('message');
+    const overlayEl   = document.getElementById('overlay');
+    const dailyBadge  = document.getElementById('dailyBadge');
+
+    // ── Tile helpers ──────────────────────────────────────────────────────────
+    const tileEl  = (r, c) => document.getElementById(`t-${r}-${c}`);
+    const innerEl = (r, c) => tileEl(r, c).querySelector('.tile-inner');
+    const frontEl = (r, c) => tileEl(r, c).querySelector('.tile-front');
+    const backEl  = (r, c) => tileEl(r, c).querySelector('.tile-back');
+
+    // ── Build grid ────────────────────────────────────────────────────────────
+    function buildGrid() {
+      gridEl.innerHTML = '';
+      for (let r = 0; r < ROWS; r++) {
+        const rowEl = document.createElement('div');
+        rowEl.className = 'grid-row';
+        rowEl.id = `row-${r}`;
+        for (let c = 0; c < COLS; c++) {
+          const tile  = document.createElement('div');
+          const inner = document.createElement('div');
+          const front = document.createElement('div');
+          const back  = document.createElement('div');
+          tile.className  = 'tile';
+          tile.id         = `t-${r}-${c}`;
+          inner.className = 'tile-inner';
+          front.className = 'tile-front';
+          back.className  = 'tile-back';
+          inner.appendChild(front);
+          inner.appendChild(back);
+          tile.appendChild(inner);
+          rowEl.appendChild(tile);
+        }
+        gridEl.appendChild(rowEl);
+      }
+    }
+
+    // ── Build keyboard ────────────────────────────────────────────────────────
+    function buildKeyboard() {
+      keyboardEl.innerHTML = '';
+      KEY_ROWS.forEach((rowStr, ri) => {
+        const rowEl = document.createElement('div');
+        rowEl.className = 'key-row';
+        if (ri === 2) rowEl.appendChild(makeKey('ENTER', true));
+        for (const ch of rowStr) rowEl.appendChild(makeKey(ch, false));
+        if (ri === 2) rowEl.appendChild(makeKey('⌫', true));
+        keyboardEl.appendChild(rowEl);
+      });
+    }
+
+    function makeKey(label, wide) {
+      const btn = document.createElement('button');
+      btn.className = 'key' + (wide ? ' wide' : '');
+      btn.textContent = label;
+      btn.dataset.k = label;
+      btn.addEventListener('click', () => onKey(label));
+      return btn;
+    }
+
+    // ── Handle key press ──────────────────────────────────────────────────────
+    function onKey(key) {
+      if (gameOver || revealing) return;
+
+      if (key === '⌫' || key === 'BACKSPACE') {
+        if (currentTile > 0) {
+          currentTile--;
+          frontEl(currentRow, currentTile).textContent = '';
+          tileEl(currentRow, currentTile).classList.remove('filled');
+          currentGuess = currentGuess.slice(0, -1);
+        }
+        return;
+      }
+
+      if (key === 'ENTER') {
+        submitGuess();
+        return;
+      }
+
+      if (/^[A-Z]$/.test(key) && currentTile < COLS) {
+        frontEl(currentRow, currentTile).textContent = key;
+        const t = tileEl(currentRow, currentTile);
+        t.classList.add('filled');
+        t.classList.remove('pop');
+        void t.offsetWidth; // reflow to restart animation
+        t.classList.add('pop');
+        currentGuess += key;
+        currentTile++;
+      }
+    }
+
+    // ── Submit guess ──────────────────────────────────────────────────────────
+    function submitGuess() {
+      if (currentGuess.length < COLS) {
+        flash('Not enough letters');
+        shakeRow(currentRow);
+        return;
+      }
+      const lower = currentGuess.toLowerCase();
+      if (!WORD_SET.has(lower)) {
+        flash('Not in word list');
+        shakeRow(currentRow);
+        return;
+      }
+
+      const result  = evaluate(lower, targetWord);
+      const snapRow = currentRow; // capture before async
+
+      revealRow(snapRow, currentGuess, result, () => {
+        applyKeyColors(currentGuess, result);
+        const won = result.every(r => r === 'green');
+        if (won) {
+          gameOver = true;
+          SFX.play('win');
+          setTimeout(() => showOverlay(true, WIN_MSGS[snapRow] || 'Nice!', snapRow + 1), 350);
+        } else if (snapRow === ROWS - 1) {
+          gameOver = true;
+          SFX.play('lose');
+          setTimeout(() => showOverlay(false, '', 0), 350);
+        }
+        currentRow++;
+        currentTile = 0;
+        currentGuess = '';
+      });
+    }
+
+    // ── Evaluate guess → result array ─────────────────────────────────────────
+    function evaluate(guess, target) {
+      const result  = Array(COLS).fill('gray');
+      const tArr    = target.split('');
+      const gArr    = guess.split('');
+      const matched = Array(COLS).fill(false);
+
+      for (let i = 0; i < COLS; i++) {
+        if (gArr[i] === tArr[i]) {
+          result[i]  = 'green';
+          matched[i] = true;
+          gArr[i]    = null;
+        }
+      }
+      for (let i = 0; i < COLS; i++) {
+        if (gArr[i] === null) continue;
+        for (let j = 0; j < COLS; j++) {
+          if (!matched[j] && gArr[i] === tArr[j]) {
+            result[i]  = 'yellow';
+            matched[j] = true;
+            break;
+          }
+        }
+      }
+      return result;
+    }
+
+    // ── Flip animation row reveal ─────────────────────────────────────────────
+    function revealRow(row, guess, result, onDone) {
+      revealing = true;
+      result.forEach((color, c) => {
+        setTimeout(() => {
+          const inner = innerEl(row, c);
+          backEl(row, c).textContent = frontEl(row, c).textContent;
+          inner.classList.add(color, 'flip');
+          if (c === COLS - 1) {
+            setTimeout(() => { revealing = false; onDone(); }, FLIP_DUR + 50);
+          }
+        }, c * FLIP_DELAY);
+      });
+    }
+
+    // ── Keyboard color state ──────────────────────────────────────────────────
+    function applyKeyColors(guess, result) {
+      for (let i = 0; i < COLS; i++) {
+        const ch    = guess[i];
+        const color = result[i];
+        if (!letterStates[ch] || COLOR_RANK[color] > COLOR_RANK[letterStates[ch]]) {
+          letterStates[ch] = color;
+        }
+      }
+      document.querySelectorAll('.key').forEach(btn => {
+        const state = letterStates[btn.dataset.k];
+        if (state) {
+          btn.className = 'key' + (btn.classList.contains('wide') ? ' wide' : '') + ' ' + state;
+        }
+      });
+    }
+
+    // ── Flash message ─────────────────────────────────────────────────────────
+    let msgTimer;
+    function flash(text) {
+      messageEl.textContent = text;
+      messageEl.classList.add('show');
+      clearTimeout(msgTimer);
+      msgTimer = setTimeout(() => {
+        messageEl.classList.remove('show');
+      }, 1800);
+    }
+
+    // ── Shake row ─────────────────────────────────────────────────────────────
+    function shakeRow(row) {
+      const el = document.getElementById(`row-${row}`);
+      el.classList.remove('shake');
+      void el.offsetWidth;
+      el.classList.add('shake');
+      SFX.play('wrong');
+    }
+
+    // ── Overlay ───────────────────────────────────────────────────────────────
+    function showOverlay(won, title, guessCount) {
+      document.getElementById('overlayEmoji').textContent = won ? '🎉' : '😞';
+      document.getElementById('overlayTitle').textContent = won ? title : 'Game Over';
+      document.getElementById('overlayWord').textContent  = targetWord.toUpperCase();
+      document.getElementById('overlaySub').textContent   = won
+        ? `Solved in ${guessCount} ${guessCount === 1 ? 'guess' : 'guesses'}!`
+        : 'Better luck next time!';
+      overlayEl.classList.remove('hidden');
+    }
+
+    // ── Start / reset ─────────────────────────────────────────────────────────
+    function startGame(daily) {
+      targetWord   = daily ? getDailyWord() : WORDS_UNIQUE[Math.floor(Math.random() * WORDS_UNIQUE.length)];
+      currentRow   = 0;
+      currentTile  = 0;
+      currentGuess = '';
+      letterStates = {};
+      gameOver     = false;
+      revealing    = false;
+      dailyBadge.textContent = daily ? "Today's word" : 'Random word';
+      messageEl.classList.remove('show');
+      overlayEl.classList.add('hidden');
+      buildGrid();
+      buildKeyboard();
+    }
+
+    // ── Physical keyboard ─────────────────────────────────────────────────────
+    document.addEventListener('keydown', e => {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      const k = e.key.toUpperCase();
+      if (k === 'BACKSPACE') { e.preventDefault(); onKey('BACKSPACE'); }
+      else if (k === 'ENTER')     onKey('ENTER');
+      else if (/^[A-Z]$/.test(k)) onKey(k);
+    });
+
+    document.getElementById('newGameBtn').addEventListener('click', () => startGame(false));
+    document.getElementById('overlayNewGame').addEventListener('click', () => startGame(false));
+    document.getElementById('overlayClose').addEventListener('click', () => overlayEl.classList.add('hidden'));
+
+    // ── Init ──────────────────────────────────────────────────────────────────
+    startGame(true);
+  </script>
+
+</body>
+</html>

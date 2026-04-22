@@ -231,6 +231,15 @@ const GAMES = [
     path: 'games/tetris.html',
     tags: ['tetris', 'blocks', 'puzzle', 'classic'],
   },
+  {
+    id: 'wordle',
+    title: 'Wordle',
+    desc: 'Guess the 5-letter word in 6 tries. Green means right spot, yellow means wrong spot.',
+    category: 'word',
+    icon: '🟩',
+    path: 'games/wordle.html',
+    tags: ['wordle', 'word', 'spelling', 'daily'],
+  },
 ];
 
 // =====================================================
