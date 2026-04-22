@@ -549,10 +549,15 @@ function findFloating() {
   const queue = [];
   if (grid.length === 0) return [];
 
+  // Treat cells currently animating as popped (already logically removed)
+  const popping = new Set();
+  for (const p of popQueue) popping.add(`${p.row},${p.col}`);
+
   for (let col = 0; col < grid[0].length; col++) {
-    if (grid[0][col]) {
+    const key = `0,${col}`;
+    if (grid[0][col] && !popping.has(key)) {
       queue.push({ row: 0, col });
-      connected.add(`0,${col}`);
+      connected.add(key);
     }
   }
 
@@ -560,7 +565,7 @@ function findFloating() {
     const { row, col } = queue.shift();
     for (const nb of getNeighbors(row, col)) {
       const key = `${nb.row},${nb.col}`;
-      if (!connected.has(key) && grid[nb.row] && grid[nb.row][nb.col]) {
+      if (!connected.has(key) && grid[nb.row] && grid[nb.row][nb.col] && !popping.has(key)) {
         connected.add(key);
         queue.push(nb);
       }
@@ -570,7 +575,8 @@ function findFloating() {
   const floating = [];
   for (let row = 0; row < grid.length; row++) {
     for (let col = 0; col < (grid[row] ? grid[row].length : 0); col++) {
-      if (grid[row][col] && !connected.has(`${row},${col}`)) {
+      const key = `${row},${col}`;
+      if (grid[row][col] && !connected.has(key) && !popping.has(key)) {
         floating.push({ row, col });
       }
     }
