@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Whack-a-Mole — GameKingdom</title>
+  <meta name="description" content="Smash the moles as fast as you can before time runs out! Watch out for the bombs." />
+  <script src="../sounds.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0f0f13; --surface: #1a1a24; --surface2: #22222f;
+      --border: #2e2e3e; --accent: #7c5cfc; --text: #e8e8f0; --text-dim: #888899;
+    }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100dvh; display: flex; flex-direction: column;
+      overflow-x: hidden;
+    }
+    a { color: var(--accent); }
+
+    /* nav */
+    .game-nav {
+      padding: 12px 16px; background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 12px; flex-shrink: 0;
+    }
+    .back-link { font-size: .9rem; text-decoration: none; }
+    .back-link:hover { text-decoration: underline; }
+    .game-nav h1 { font-size: 1.1rem; font-weight: 700; }
+
+    /* layout */
+    #gameContainer {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 16px; gap: 20px;
+    }
+
+    /* HUD */
+    #hud {
+      display: flex; gap: 28px; align-items: center;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 14px; padding: 10px 28px;
+      font-size: clamp(.95rem, 2.5vw, 1.15rem); font-weight: 700;
+    }
+    .hud-item { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+    .hud-label { font-size: .72em; color: var(--text-dim); font-weight: 400; letter-spacing: .05em; text-transform: uppercase; }
+    .hud-val { color: var(--accent); font-size: 1.3em; }
+    #timeVal.urgent { color: #ff4466; animation: pulse .5s ease infinite alternate; }
+    @keyframes pulse { from { opacity: 1; } to { opacity: .6; } }
+
+    /* grid */
+    #grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: clamp(10px, 2.5vw, 18px);
+      width: min(88vw, 400px);
+    }
+
+    /* hole */
+    .hole {
+      position: relative;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      overflow: hidden;
+      cursor: pointer;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      background: radial-gradient(ellipse 80% 55% at 50% 85%, #1a0e06 0%, #0e0d1a 100%);
+      border: 3px solid #3a3050;
+      transition: transform .08s, border-color .12s;
+    }
+    .hole:active { transform: scale(.93); }
+    .hole:hover  { border-color: var(--accent); }
+
+    /* inner shadow gives hole depth */
+    .hole::before {
+      content: '';
+      position: absolute;
+      inset: 12% 8%;
+      border-radius: 50%;
+      background: radial-gradient(circle, transparent 35%, rgba(0,0,0,.55) 100%);
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* dirt rim — overlaps bottom of mole, creates rise-from-ground illusion */
+    .hole::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: -6%; right: -6%;
+      height: 38%;
+      background: linear-gradient(to top, #3d2a1a 0%, #5a3e28 70%, #6b4a30 100%);
+      border-radius: 0 0 50% 50%;
+      z-index: 3;
+      pointer-events: none;
+    }
+
+    /* mole — starts hidden below the fold */
+    .mole {
+      position: absolute;
+      bottom: -115%;
+      left: 50%; transform: translateX(-50%);
+      width: 66%; aspect-ratio: 1;
+      font-size: clamp(28px, 8vw, 48px);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 2;
+      transition: bottom .16s cubic-bezier(.25,.1,.25,1.4);
+      pointer-events: none;
+      line-height: 1;
+    }
+
+    /* mole visible */
+    .hole.active .mole { bottom: 10%; }
+
+    /* hit squish animation */
+    @keyframes squish {
+      0%   { transform: translateX(-50%) scaleY(1)    scaleX(1); }
+      35%  { transform: translateX(-50%) scaleY(.35)  scaleX(1.5); }
+      65%  { transform: translateX(-50%) scaleY(1.1)  scaleX(.95); }
+      100% { transform: translateX(-50%) scaleY(0)    scaleX(1); }
+    }
+    .hole.squish .mole {
+      bottom: 10%;
+      animation: squish .32s cubic-bezier(.36,.07,.19,.97) forwards;
+    }
+
+    /* bomb flash */
+    @keyframes bombFlash {
+      0%,100% { background: radial-gradient(ellipse 80% 55% at 50% 85%, #1a0e06 0%, #0e0d1a 100%); border-color: #3a3050; }
+      25%,75%  { background: radial-gradient(ellipse 80% 55% at 50% 85%, #4a1020 0%, #2a0510 100%); border-color: #ff3355; }
+      50%      { background: radial-gradient(ellipse 80% 55% at 50% 85%, #6a1830 0%, #3a0820 100%); border-color: #ff6680; }
+    }
+    .hole.bomb-hit { animation: bombFlash .45s ease forwards; }
+
+    /* score pop feedback */
+    .score-pop {
+      position: fixed;
+      font-size: 1.4rem; font-weight: 900;
+      pointer-events: none; z-index: 200;
+      animation: scorePop .7s ease forwards;
+    }
+    @keyframes scorePop {
+      0%   { opacity: 1; transform: translateY(0) scale(1); }
+      100% { opacity: 0; transform: translateY(-56px) scale(.8); }
+    }
+
+    /* screens */
+    .screen {
+      position: fixed; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 18px;
+      background: rgba(15,15,19,.93);
+      z-index: 100;
+      padding: 24px;
+    }
+    .screen h2 { font-size: clamp(2rem, 6vw, 3.2rem); font-weight: 900; color: var(--accent); }
+    .screen p  { color: var(--text-dim); font-size: clamp(.9rem, 2.5vw, 1.1rem); text-align: center; max-width: 320px; line-height: 1.5; }
+    .score-big { font-size: clamp(3rem, 10vw, 5.5rem); font-weight: 900; color: var(--text); }
+    .hi-line   { font-size: 1rem; color: var(--text-dim); }
+    .hi-line em { color: #ffd700; font-style: normal; font-weight: 700; }
+
+    .diff-row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+    .diff-btn {
+      padding: 9px 20px;
+      background: var(--surface2); color: var(--text);
+      border: 2px solid var(--border);
+      border-radius: 10px; font-size: .95rem; font-weight: 600;
+      cursor: pointer; transition: border-color .1s, background .1s;
+    }
+    .diff-btn:hover, .diff-btn.sel {
+      border-color: var(--accent);
+      background: rgba(124,92,252,.18);
+    }
+
+    .btn-primary {
+      padding: 14px 44px;
+      background: var(--accent); color: #fff;
+      border: none; border-radius: 12px;
+      font-size: 1.15rem; font-weight: 700;
+      cursor: pointer; transition: opacity .15s, transform .1s;
+    }
+    .btn-primary:hover  { opacity: .88; }
+    .btn-primary:active { transform: scale(.97); }
+
+    .hint-text { font-size: .8rem; color: var(--text-dim); margin-top: -4px; }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+<nav class="game-nav">
+  <a href="../index.html" class="back-link">← GameKingdom</a>
+  <h1>🔨 Whack-a-Mole</h1>
+</nav>
+
+<div id="gameContainer">
+  <div id="hud" class="hidden">
+    <div class="hud-item">
+      <span class="hud-label">Score</span>
+      <span class="hud-val" id="scoreVal">0</span>
+    </div>
+    <div class="hud-item">
+      <span class="hud-label">Time</span>
+      <span class="hud-val" id="timeVal">60</span>
+    </div>
+    <div class="hud-item">
+      <span class="hud-label">Best</span>
+      <span class="hud-val" id="bestVal">—</span>
+    </div>
+  </div>
+
+  <div id="grid"></div>
+</div>
+
+<!-- Start Screen -->
+<div class="screen" id="startScreen">
+  <h2>🔨 Whack-a-Mole</h2>
+  <p>Smash 🐭 moles before they escape. Avoid 💣 bombs or you'll lose points!</p>
+  <div class="diff-row" id="diffRow">
+    <button class="diff-btn" data-d="easy">😌 Easy</button>
+    <button class="diff-btn sel" data-d="normal">😤 Normal</button>
+    <button class="diff-btn" data-d="hard">🔥 Hard</button>
+  </div>
+  <button class="btn-primary" id="btnStart">Start Game</button>
+  <span class="hint-text">+10 hit &nbsp;·&nbsp; −5 miss &nbsp;·&nbsp; −20 bomb &nbsp;·&nbsp; 60 seconds</span>
+</div>
+
+<!-- End Screen -->
+<div class="screen hidden" id="endScreen">
+  <h2>⏱️ Time's Up!</h2>
+  <div class="score-big" id="finalScore">0</div>
+  <p id="resultMsg"></p>
+  <p class="hi-line" id="hiLine"></p>
+  <button class="btn-primary" id="btnReplay">Play Again</button>
+  <a href="../index.html" style="font-size:.9rem">← Back to GameKingdom</a>
+</div>
+
+<script>
+'use strict';
+
+const DIFF = {
+  easy:   { spawnMs: 1100, visibleMs: 2200, stepMs: 12000, spawnDelta: 70,  visDelta: 100, minSpawn: 280, minVis: 700 },
+  normal: { spawnMs:  800, visibleMs: 1500, stepMs: 10000, spawnDelta: 70,  visDelta: 100, minSpawn: 240, minVis: 550 },
+  hard:   { spawnMs:  500, visibleMs:  900, stepMs:  8000, spawnDelta: 50,  visDelta:  80, minSpawn: 200, minVis: 420 },
+};
+
+let score, timeLeft, selectedDiff, gameActive;
+let spawnTimer, countdownTimer, stepTimer;
+let holeTimers = [];
+let curSpawnMs, curVisibleMs;
+
+const grid        = document.getElementById('grid');
+const hud         = document.getElementById('hud');
+const scoreEl     = document.getElementById('scoreVal');
+const timeEl      = document.getElementById('timeVal');
+const bestEl      = document.getElementById('bestVal');
+const startScreen = document.getElementById('startScreen');
+const endScreen   = document.getElementById('endScreen');
+const finalScoreEl = document.getElementById('finalScore');
+const resultMsg   = document.getElementById('resultMsg');
+const hiLine      = document.getElementById('hiLine');
+
+selectedDiff = 'normal';
+
+// --- Build 9 holes ---
+const holes = [];
+for (let i = 0; i < 9; i++) {
+  const hole = document.createElement('div');
+  hole.className = 'hole';
+  hole.innerHTML = '<div class="mole"></div>';
+  hole.addEventListener('pointerdown', e => { e.preventDefault(); whack(i); });
+  grid.appendChild(hole);
+  holes.push(hole);
+}
+
+// --- Difficulty picker ---
+document.getElementById('diffRow').addEventListener('click', e => {
+  const btn = e.target.closest('.diff-btn');
+  if (!btn) return;
+  document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('sel'));
+  btn.classList.add('sel');
+  selectedDiff = btn.dataset.d;
+  updateHUD();
+});
+
+// --- High score ---
+const hsKey = d => `wam_hi_${d}`;
+const getHi  = d => parseInt(localStorage.getItem(hsKey(d)) || '0', 10);
+const saveHi = (d, s) => { if (s > getHi(d)) localStorage.setItem(hsKey(d), s); };
+
+// --- HUD ---
+function updateHUD() {
+  scoreEl.textContent = score;
+  timeEl.textContent  = timeLeft;
+  const hi = getHi(selectedDiff);
+  bestEl.textContent  = hi > 0 ? hi : '—';
+  timeEl.classList.toggle('urgent', timeLeft <= 10);
+}
+
+// --- Score pop animation ---
+function showScorePop(hole, text, color) {
+  const rect = hole.getBoundingClientRect();
+  const el = document.createElement('span');
+  el.className = 'score-pop';
+  el.textContent = text;
+  el.style.color = color;
+  el.style.left  = (rect.left + rect.width / 2 - 24) + 'px';
+  el.style.top   = (rect.top  - 10) + 'px';
+  document.body.appendChild(el);
+  el.addEventListener('animationend', () => el.remove());
+}
+
+// --- Spawn mole ---
+function spawnMole() {
+  if (!gameActive) return;
+  const available = holes
+    .map((h, i) => i)
+    .filter(i => !holes[i].classList.contains('active') &&
+                 !holes[i].classList.contains('squish') &&
+                 !holes[i].classList.contains('bomb-hit'));
+  if (available.length === 0) return;
+
+  const idx  = available[Math.floor(Math.random() * available.length)];
+  const hole = holes[idx];
+  const mole = hole.querySelector('.mole');
+  const isBomb = Math.random() < 0.12;
+
+  mole.textContent   = isBomb ? '💣' : '🐭';
+  hole.dataset.bomb  = isBomb ? '1' : '0';
+  hole.dataset.hit   = '0';
+  hole.classList.add('active');
+
+  holeTimers[idx] = setTimeout(() => expireMole(hole, idx), curVisibleMs);
+}
+
+// --- Mole expired without being hit ---
+function expireMole(hole, idx) {
+  if (!gameActive) return;
+  if (hole.dataset.hit === '1' || !hole.classList.contains('active')) return;
+  if (hole.dataset.bomb !== '1') {
+    score = Math.max(0, score - 5);
+    updateHUD();
+    showScorePop(hole, '−5', '#ff6680');
+    if (typeof SFX !== 'undefined') SFX.play('wrong');
+  }
+  hole.classList.remove('active');
+  hole.dataset.hit  = '0';
+  hole.dataset.bomb = '0';
+  holeTimers[idx] = null;
+}
+
+// --- Hit a hole ---
+function whack(idx) {
+  if (!gameActive) return;
+  const hole = holes[idx];
+  if (!hole.classList.contains('active')) return;
+  if (hole.dataset.hit === '1') return;
+
+  hole.dataset.hit = '1';
+  clearTimeout(holeTimers[idx]);
+  holeTimers[idx] = null;
+
+  if (hole.dataset.bomb === '1') {
+    score = Math.max(0, score - 20);
+    hole.classList.remove('active');
+    hole.classList.add('bomb-hit');
+    showScorePop(hole, '−20 💥', '#ff3355');
+    if (typeof SFX !== 'undefined') SFX.play('wrong');
+    setTimeout(() => {
+      hole.classList.remove('bomb-hit');
+      hole.dataset.bomb = '0';
+      hole.dataset.hit  = '0';
+    }, 450);
+  } else {
+    score += 10;
+    hole.classList.remove('active');
+    hole.classList.add('squish');
+    showScorePop(hole, '+10', '#7ced9a');
+    if (typeof SFX !== 'undefined') SFX.play('hit');
+    setTimeout(() => {
+      hole.classList.remove('squish');
+      hole.dataset.hit = '0';
+    }, 320);
+  }
+  updateHUD();
+}
+
+// --- Difficulty progression every N seconds ---
+function difficultyStep() {
+  if (!gameActive) return;
+  const cfg = DIFF[selectedDiff];
+  curSpawnMs   = Math.max(cfg.minSpawn, curSpawnMs   - cfg.spawnDelta);
+  curVisibleMs = Math.max(cfg.minVis,   curVisibleMs - cfg.visDelta);
+  clearInterval(spawnTimer);
+  spawnTimer = setInterval(spawnMole, curSpawnMs);
+}
+
+// --- Start game ---
+function startGame() {
+  const cfg = DIFF[selectedDiff];
+  score        = 0;
+  timeLeft     = 60;
+  gameActive   = true;
+  curSpawnMs   = cfg.spawnMs;
+  curVisibleMs = cfg.visibleMs;
+
+  clearInterval(spawnTimer);
+  clearInterval(countdownTimer);
+  clearInterval(stepTimer);
+
+  holes.forEach((h, i) => {
+    clearTimeout(holeTimers[i]);
+    holeTimers[i] = null;
+    h.classList.remove('active', 'squish', 'bomb-hit');
+    h.dataset.hit  = '0';
+    h.dataset.bomb = '0';
+  });
+
+  hud.classList.remove('hidden');
+  startScreen.classList.add('hidden');
+  endScreen.classList.add('hidden');
+  updateHUD();
+
+  spawnTimer     = setInterval(spawnMole,      curSpawnMs);
+  countdownTimer = setInterval(tick,           1000);
+  stepTimer      = setInterval(difficultyStep, cfg.stepMs);
+}
+
+// --- Countdown tick ---
+function tick() {
+  if (!gameActive) return;
+  timeLeft--;
+  updateHUD();
+  if (typeof SFX !== 'undefined' && timeLeft <= 5 && timeLeft > 0) SFX.play('click');
+  if (timeLeft <= 0) endGame();
+}
+
+// --- End game ---
+function endGame() {
+  gameActive = false;
+  clearInterval(spawnTimer);
+  clearInterval(countdownTimer);
+  clearInterval(stepTimer);
+  holeTimers.forEach((t, i) => { clearTimeout(t); holeTimers[i] = null; });
+  holes.forEach(h => h.classList.remove('active', 'squish', 'bomb-hit'));
+
+  if (typeof SFX !== 'undefined') SFX.play('lose');
+
+  saveHi(selectedDiff, score);
+  const hi = getHi(selectedDiff);
+
+  finalScoreEl.textContent = score;
+  resultMsg.textContent =
+    score >= 200 ? '🏆 Mole Crusher! Incredible!' :
+    score >= 120 ? '🔨 Whack Master! Great job!'  :
+    score >= 60  ? '💪 Keep it up!'               :
+                   '🌱 Nice try!';
+  const isNewHi = score >= hi && score > 0;
+  hiLine.innerHTML = isNewHi
+    ? `🎉 New best on <strong>${selectedDiff}</strong>: <em>${hi}</em>`
+    : `Best on <strong>${selectedDiff}</strong>: <em>${hi}</em>`;
+
+  endScreen.classList.remove('hidden');
+
+  window.dispatchEvent(new CustomEvent('gameOver', {
+    detail: { game: 'whack-a-mole', score }
+  }));
+}
+
+// --- Button listeners ---
+document.getElementById('btnStart').addEventListener('click', startGame);
+document.getElementById('btnReplay').addEventListener('click', () => {
+  endScreen.classList.add('hidden');
+  startGame();
+});
+</script>
+
+</body>
+</html>

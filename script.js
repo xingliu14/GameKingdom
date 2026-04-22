@@ -240,6 +240,15 @@ const GAMES = [
     path: 'games/wordle.html',
     tags: ['wordle', 'word', 'spelling', 'daily'],
   },
+  {
+    id: 'whack-a-mole',
+    title: 'Whack-a-Mole',
+    desc: 'Smash the moles as fast as you can before time runs out! Watch out for the bombs.',
+    category: 'action',
+    icon: '🔨',
+    path: 'games/whack-a-mole.html',
+    tags: ['whack', 'mole', 'reflex', 'action', 'tap'],
+  },
 ];
 
 // =====================================================
