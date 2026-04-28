@@ -117,6 +117,8 @@
     const keys = {};
     let touchLeft  = false;
     let touchRight = false;
+    let touchUp    = false;
+    let touchDown  = false;
 
     // ── Helpers ───────────────────────────────────────────────────────────────
     function rnd(lo, hi) { return lo + Math.random() * (hi - lo); }
@@ -199,11 +201,16 @@
       scoreTxt.textContent = Math.floor(score);
       if (Math.floor(score) !== prevFloor && Math.floor(score) % 5 === 0) SFX.play('score');
 
-      // Ship movement
-      let dir = 0;
-      if (keys['ArrowLeft']  || keys['a'] || keys['A'] || touchLeft)  dir -= 1;
-      if (keys['ArrowRight'] || keys['d'] || keys['D'] || touchRight) dir += 1;
-      ship.x = Math.max(ship.w, Math.min(W - ship.w, ship.x + dir * ship.speed * dt));
+      // Ship movement — 8 directions with diagonal normalization
+      let dirX = 0, dirY = 0;
+      if (keys['ArrowLeft']  || keys['a'] || keys['A'] || touchLeft)  dirX -= 1;
+      if (keys['ArrowRight'] || keys['d'] || keys['D'] || touchRight) dirX += 1;
+      if (keys['ArrowUp']    || keys['w'] || keys['W'] || touchUp)    dirY -= 1;
+      if (keys['ArrowDown']  || keys['s'] || keys['S'] || touchDown)  dirY += 1;
+      const len = Math.sqrt(dirX * dirX + dirY * dirY);
+      if (len > 0) { dirX /= len; dirY /= len; }
+      ship.x = Math.max(ship.w, Math.min(W - ship.w, ship.x + dirX * ship.speed * dt));
+      ship.y = Math.max(ship.h, Math.min(H - ship.h, ship.y + dirY * ship.speed * dt));
 
       // Spawn asteroids
       spawnClock += dt;
@@ -361,8 +368,8 @@
 
       ctx.font      = '13px Segoe UI,system-ui,sans-serif';
       ctx.fillStyle = COL.dim;
-      ctx.fillText('Arrow keys or A / D to move', W / 2, H / 2 + 70);
-      ctx.fillText('Touch left or right side of screen', W / 2, H / 2 + 90);
+      ctx.fillText('Arrow keys or W A S D — 8 directions', W / 2, H / 2 + 70);
+      ctx.fillText('Touch any quadrant of the screen', W / 2, H / 2 + 90);
 
       // Pulsing CTA
       const pulse = 0.5 + 0.5 * Math.sin(Date.now() / 420);
@@ -459,32 +466,35 @@
       return (clientX - rect.left) / rect.width * W;
     }
 
+    function touchCanvasY(clientY) {
+      const rect = canvas.getBoundingClientRect();
+      return (clientY - rect.top) / rect.height * H;
+    }
+
+    function applyTouches(touches) {
+      touchLeft = touchRight = touchUp = touchDown = false;
+      for (const t of touches) {
+        if (touchCanvasX(t.clientX) < W / 2) touchLeft  = true;
+        else                                  touchRight = true;
+        if (touchCanvasY(t.clientY) < H / 2) touchUp    = true;
+        else                                  touchDown  = true;
+      }
+    }
+
     canvas.addEventListener('touchstart', e => {
       e.preventDefault();
       if (phase !== 'playing') { startGame(); return; }
-      touchLeft = touchRight = false;
-      for (const t of e.touches) {
-        if (touchCanvasX(t.clientX) < W / 2) touchLeft  = true;
-        else                                  touchRight = true;
-      }
+      applyTouches(e.touches);
     }, { passive: false });
 
     canvas.addEventListener('touchmove', e => {
       e.preventDefault();
-      touchLeft = touchRight = false;
-      for (const t of e.touches) {
-        if (touchCanvasX(t.clientX) < W / 2) touchLeft  = true;
-        else                                  touchRight = true;
-      }
+      applyTouches(e.touches);
     }, { passive: false });
 
     canvas.addEventListener('touchend', e => {
       e.preventDefault();
-      touchLeft = touchRight = false;
-      for (const t of e.touches) {
-        if (touchCanvasX(t.clientX) < W / 2) touchLeft  = true;
-        else                                  touchRight = true;
-      }
+      applyTouches(e.touches);
     }, { passive: false });
 
     // ── Mouse click ───────────────────────────────────────────────────────────
