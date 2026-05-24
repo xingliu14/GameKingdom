@@ -112,6 +112,7 @@
     let ship, asteroids, particles;
     let score, spawnClock, spawnInterval;
     let prevTs  = null;
+    let alerts  = []; // { text, life } on-screen direction-unlock notices
 
     // ── Input ─────────────────────────────────────────────────────────────────
     const keys = {};
@@ -151,16 +152,36 @@
         const d = r * rnd(0.68, 1.0);
         pts.push({ x: Math.cos(a) * d, y: Math.sin(a) * d });
       }
-      const speed = 90 + score * 9 + rnd(0, 55);
-      return {
-        x: rnd(r, W - r),
-        y: -r - 10,
-        r, pts,
-        angle: rnd(0, Math.PI * 2),
-        spin:  rnd(-1.8, 1.8),
-        vy:    speed,
-        vx:    rnd(-55, 55),
-      };
+      const baseSpeed = 90 + score * 9 + rnd(0, 55);
+
+      // Gradually unlock directions as time passes
+      const sideW   = Math.max(0, Math.min(1,   (score - 10) / 15)); // 0→1 over 10–25s
+      const bottomW = Math.max(0, Math.min(0.6, (score - 25) / 15)); // 0→0.6 over 25–40s
+      const total   = 1 + sideW * 2 + bottomW;
+      const pick    = Math.random() * total;
+
+      let dir;
+      if      (pick < 1)               dir = 'top';
+      else if (pick < 1 + sideW)       dir = 'left';
+      else if (pick < 1 + sideW * 2)   dir = 'right';
+      else                              dir = 'bottom';
+
+      let x, y, vx, vy;
+      if (dir === 'top') {
+        x = rnd(r, W - r); y = -r - 10;
+        vx = rnd(-55, 55); vy = baseSpeed;
+      } else if (dir === 'bottom') {
+        x = rnd(r, W - r); y = H + r + 10;
+        vx = rnd(-55, 55); vy = -baseSpeed;
+      } else if (dir === 'left') {
+        x = -r - 10; y = rnd(r, H - r);
+        vx = baseSpeed; vy = rnd(-55, 55);
+      } else {
+        x = W + r + 10; y = rnd(r, H - r);
+        vx = -baseSpeed; vy = rnd(-55, 55);
+      }
+
+      return { x, y, r, pts, angle: rnd(0, Math.PI * 2), spin: rnd(-1.8, 1.8), vx, vy };
     }
 
     function mkBurst(x, y) {
@@ -184,6 +205,7 @@
       ship          = mkShip();
       asteroids     = [];
       particles     = [];
+      alerts        = [];
       score         = 0;
       spawnClock    = 0;
       spawnInterval = 1.15;
@@ -200,6 +222,10 @@
       score += dt;
       scoreTxt.textContent = Math.floor(score);
       if (Math.floor(score) !== prevFloor && Math.floor(score) % 5 === 0) SFX.play('score');
+
+      // Fire direction-unlock alerts at key thresholds
+      if (prevFloor < 10 && Math.floor(score) >= 10) alerts.push({ text: '⚠ Asteroids from the sides!', life: 1 });
+      if (prevFloor < 25 && Math.floor(score) >= 25) alerts.push({ text: '⚠ Asteroids from below!',     life: 1 });
 
       // Ship movement — 8 directions with diagonal normalization
       let dirX = 0, dirY = 0;
@@ -226,7 +252,8 @@
         a.x += a.vx * dt;
         a.y += a.vy * dt;
         a.angle += a.spin * dt;
-        if (a.y > H + a.r + 20) { asteroids.splice(i, 1); continue; }
+        if (a.y > H + a.r + 20 || a.y < -a.r - 20 ||
+            a.x < -a.r - 20   || a.x > W + a.r + 20) { asteroids.splice(i, 1); continue; }
 
         // Circle vs circle (ship hitbox radius ~16)
         const dx = a.x - ship.x, dy = a.y - ship.y;
@@ -250,6 +277,12 @@
         p.vy   += 260 * dt;
         p.life -= p.decay * dt;
         if (p.life <= 0) particles.splice(i, 1);
+      }
+
+      // Alert banners
+      for (let i = alerts.length - 1; i >= 0; i--) {
+        alerts[i].life -= dt * 0.38;
+        if (alerts[i].life <= 0) alerts.splice(i, 1);
       }
     }
 
@@ -333,6 +366,23 @@
       ctx.globalAlpha = 1;
     }
 
+    function drawAlerts() {
+      if (!alerts.length) return;
+      ctx.textAlign = 'center';
+      ctx.font = '700 15px Segoe UI,system-ui,sans-serif';
+      alerts.forEach((al, i) => {
+        const alpha = Math.min(1, al.life * 2);
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = '#1a1a24';
+        const tw = ctx.measureText(al.text).width;
+        roundRect(W / 2 - tw / 2 - 12, H / 2 - 20 - i * 38, tw + 24, 30, 6);
+        ctx.fill();
+        ctx.fillStyle = COL.danger;
+        ctx.fillText(al.text, W / 2, H / 2 - 1 - i * 38);
+        ctx.globalAlpha = 1;
+      });
+    }
+
     function drawHUD() {
       ctx.fillStyle = 'rgba(10,10,16,0.55)';
       roundRect(10, 10, 128, 34, 6);
@@ -364,7 +414,7 @@
       // Instructions
       ctx.font      = '15px Segoe UI,system-ui,sans-serif';
       ctx.fillStyle = COL.text;
-      ctx.fillText('Dodge the falling asteroids!', W / 2, H / 2 + 42);
+      ctx.fillText('Dodge the asteroids — they come from all sides!', W / 2, H / 2 + 42);
 
       ctx.font      = '13px Segoe UI,system-ui,sans-serif';
       ctx.fillStyle = COL.dim;
@@ -436,7 +486,7 @@
       asteroids.forEach(drawAsteroid);
       if (phase === 'playing') drawShipAt(ship.x, ship.y);
       drawParticles();
-      if (phase === 'playing') drawHUD();
+      if (phase === 'playing') { drawHUD(); drawAlerts(); }
       if (phase === 'dead')    drawGameOverScreen();
     }
 
