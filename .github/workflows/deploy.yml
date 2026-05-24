@@ -18,7 +18,7 @@ jobs:
           REMOTE_DIR: /var/www/gamekingdom
         run: |
           mkdir -p ~/.ssh
-          printf '%s' "$SSH_PRIVATE_KEY" | base64 -d > ~/.ssh/id_ed25519
+          printf '%s\n' "$SSH_PRIVATE_KEY" | tr -d '\r' > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
           echo "Key first line: $(head -1 ~/.ssh/id_ed25519)"
           ssh-keyscan -H "$VPS_HOST" >> ~/.ssh/known_hosts
